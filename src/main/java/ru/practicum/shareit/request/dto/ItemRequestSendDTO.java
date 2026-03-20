@@ -1,18 +1,15 @@
-package ru.practicum.shareit.request;
+package ru.practicum.shareit.request.dto;
 
 import lombok.Data;
 import ru.practicum.shareit.common.enums.RequestStatus;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
-public class ItemRequest {
+public class ItemRequestSendDTO {
     private Long id;
     private String description;
     private Long requestor;
     private LocalDateTime created;
     private RequestStatus status;
-    private List<Long> itemIds = new ArrayList<>(10);
 }
