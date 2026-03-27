@@ -306,7 +306,7 @@ class BookingControllerIntegrationTest {
 
         // Когда: booker отменяет бронь
         BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setStatus(BookingStatus.CANCELED);
+        patchDto.setStatus(BookingStatus.CANCELLED);
 
         mockMvc.perform(patch("/bookings/" + createdBooking.getId())
                         .header("X-User-Id", booker.getId())
@@ -334,7 +334,7 @@ class BookingControllerIntegrationTest {
         User unauthorizedUser = userRepository.save(new User(null, "Unauthorized", "unauth@example.com"));
 
         BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setStatus(BookingStatus.CANCELED);
+        patchDto.setStatus(BookingStatus.CANCELLED);
 
         mockMvc.perform(patch("/bookings/" + createdBooking.getId())
                         .header("X-User-Id", unauthorizedUser.getId())
@@ -359,7 +359,7 @@ class BookingControllerIntegrationTest {
 
         // Сначала отменяем бронь
         BookingReqDto cancelDto = new BookingReqDto();
-        cancelDto.setStatus(BookingStatus.CANCELED);
+        cancelDto.setStatus(BookingStatus.CANCELLED);
         mockMvc.perform(patch("/bookings/" + createdBooking.getId())
                         .header("X-User-Id", booker.getId())
                         .contentType(MediaType.APPLICATION_JSON)

@@ -35,7 +35,7 @@ public class RequestServiceImpl implements RequestService {
         validateUserExists(requestorId);
 
         ItemRequest request = requestMapper.toEntity(requestDto);
-        request.setRequestor(requestorId);
+        request.setRequester(requestorId);
         request.setStatus(RequestStatus.PENDING);
 
         ItemRequest savedRequest = requestRepository.save(request);
@@ -124,7 +124,7 @@ public class RequestServiceImpl implements RequestService {
 
     private void validateRequestOwnership(ItemRequest request, Long requestorId) {
         log.debug("Проверка принадлежности запроса ID: {} пользователю ID: {}", request.getId(), requestorId);
-        if (!request.getRequestor().equals(requestorId)) {
+        if (!request.getRequester().equals(requestorId)) {
             throw new IllegalArgumentException("Запрос не принадлежит указанному пользователю");
         }
     }

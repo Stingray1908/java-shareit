@@ -82,9 +82,9 @@ public interface RequestService {
      * Удаляет запрос по его идентификатору.
      *
      * @param requestId идентификатор запроса, который нужно удалить
-     * @param requestorId идентификатор пользователя — владельца запроса
+     * @param requesterId идентификатор пользователя — владельца запроса
      * @throws IllegalArgumentException если запрос не принадлежит указанному пользователю
      * @throws NoSuchElementException если запрос с указанным ID не найден
      */
-    void delete(Long requestId, Long requestorId);
+    void delete(Long requestId, Long requesterId);
 }

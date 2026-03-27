@@ -16,6 +16,7 @@ import ru.practicum.shareit.item.repository.InMemoryItemRepository;
 import ru.practicum.shareit.request.dto.ItemRequestReqDTO;
 import ru.practicum.shareit.request.repository.InMemoryRequestRepository;
 import ru.practicum.shareit.request.service.RequestService;
+import ru.practicum.shareit.request.service.RequestServiceImpl;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.repository.InMemoryUserRepository;
 
@@ -30,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ItemControllerIntegrationTest {
 
     @Autowired
-    private RequestService requestService;
+    private RequestServiceImpl requestService;
 
     @Autowired
     private MockMvc mockMvc;

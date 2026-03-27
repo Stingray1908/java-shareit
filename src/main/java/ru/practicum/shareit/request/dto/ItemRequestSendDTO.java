@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 public class ItemRequestSendDTO {
     private Long id;
     private String description;
-    private Long requestor;
+    private Long requester;
     private LocalDateTime created;
     private RequestStatus status;
 }

@@ -97,7 +97,7 @@ public class BookingServiceImpl implements BookingService {
 
         if (isBooker) {
             // Букер может только отменить бронь
-            if (newStatus != BookingStatus.CANCELED) {
+            if (newStatus != BookingStatus.CANCELLED) {
                 throw new IllegalArgumentException("Booker может только отменить бронь (статус CANCELED)");
             }
             existing.setStatus(newStatus);
@@ -177,7 +177,7 @@ public class BookingServiceImpl implements BookingService {
     private void validateActiveBooking(Booking booking) {
         BookingStatus status = booking.getStatus();
         if (status == BookingStatus.REJECTED ||
-                status == BookingStatus.CANCELED ||
+                status == BookingStatus.CANCELLED ||
                 status == BookingStatus.COMPLETED) {
             throw new IllegalArgumentException("Нельзя изменить статус завершённой брони");
         }

@@ -12,6 +12,7 @@ import ru.practicum.shareit.user.dto.UserReqDTO;
 import ru.practicum.shareit.user.dto.UserSendDTO;
 import ru.practicum.shareit.user.repository.InMemoryUserRepository;
 import ru.practicum.shareit.user.service.UserService;
+import ru.practicum.shareit.user.service.UserServiceImpl;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -27,7 +28,7 @@ class UserControllerIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private UserService userService;
+    private UserServiceImpl userService;
 
     @Autowired
     private InMemoryUserRepository userRepository;

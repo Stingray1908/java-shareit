@@ -11,7 +11,7 @@ import java.util.List;
 public class ItemRequest {
     private Long id;
     private String description;
-    private Long requestor;
+    private Long requester;
     private LocalDateTime created;
     private RequestStatus status;
     private List<Long> itemIds = new ArrayList<>(10);

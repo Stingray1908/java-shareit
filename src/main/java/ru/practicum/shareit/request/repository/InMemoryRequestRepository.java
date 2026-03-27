@@ -21,7 +21,7 @@ public class InMemoryRequestRepository implements RequestRepository {
         request.setId(requestId);
         request.setCreated(LocalDateTime.now());
 
-        Long userId = request.getRequestor();
+        Long userId = request.getRequester();
 
         requestIdToUserId.put(requestId, userId);
         userIdToRequests.computeIfAbsent(userId, k -> new ArrayList<>()).add(request);

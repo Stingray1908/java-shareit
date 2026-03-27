@@ -172,7 +172,7 @@ public class ItemServiceImpl implements ItemService {
     private void validateRequestOwnership(Long requestOwnerId, Long requestId) {
         ItemRequest request = requestService.getByIdForInternal(requestId);
 
-        if (!Objects.equals(request.getRequestor(), requestOwnerId)) {
+        if (!Objects.equals(request.getRequester(), requestOwnerId)) {
             throw new SecurityException(
                     String.format("Пользователь ID: %d не является владельцем запроса ID: %d",
                             requestOwnerId, requestId));
