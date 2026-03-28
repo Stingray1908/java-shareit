@@ -11,6 +11,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.user.dto.UserReqDTO;
 import ru.practicum.shareit.user.dto.UserSendDTO;
 import ru.practicum.shareit.user.repository.InMemoryUserRepository;
+import ru.practicum.shareit.user.repository.UserJPARepository;
+import ru.practicum.shareit.user.service.UserJPAService;
 import ru.practicum.shareit.user.service.UserService;
 import ru.practicum.shareit.user.service.UserServiceImpl;
 
@@ -28,7 +30,7 @@ class UserControllerIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private UserServiceImpl userService;
+    private UserService userService;
 
     @Autowired
     private InMemoryUserRepository userRepository;
