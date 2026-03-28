@@ -11,7 +11,7 @@ import ru.practicum.shareit.user.repository.UserJPARepository;
 import java.util.Collection;
 import java.util.NoSuchElementException;
 
-@Service("JpaService")
+@Service("UserJpaService")
 public class UserJPAService implements UserService {
 
     private final UserJPARepository jpaRepository;
