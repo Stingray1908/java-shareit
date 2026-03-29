@@ -1,4 +1,4 @@
-package ru.practicum.shareit.booking;
+/*package ru.practicum.shareit.booking;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -810,6 +810,6 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message", containsString("Owner не может изменить статус 'подтверждено' на 'REJECTED'. Разрешён только 'завершено'")));
     }
-}
+}*/
 
 

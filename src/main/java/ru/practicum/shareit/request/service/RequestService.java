@@ -45,20 +45,13 @@ public interface RequestService {
     ItemRequest patchStatusInternal(ItemRequest request);
 
     /**
-     * Возвращает список всех запросов в системе.
-     *
-     * @return список DTO со всеми запросами
-     */
-    List<ItemRequestSendDTO> getAllRequests();
-
-    /**
      * Получает сущность запроса по его идентификатору для внутреннего использования.
      *
      * @param requestId идентификатор запроса
      * @return сущность запроса
      * @throws NoSuchElementException если запрос с указанным ID не найден
      */
-    ItemRequest getByIdForInternal(Long requestId);
+    ItemRequest findActiveRequestByIdOrThrowInternal(Long requestId);
 
     /**
      * Получает DTO запроса по его идентификатору для внешнего использования (клиента).
@@ -67,7 +60,7 @@ public interface RequestService {
      * @return DTO с данными запроса
      * @throws NoSuchElementException если запрос с указанным ID не найден
      */
-    ItemRequestSendDTO getByIdExternal(Long requestId);
+    ItemRequestSendDTO getById(Long requestId);
 
     /**
      * Возвращает список запросов, созданных указанным пользователем.
@@ -86,5 +79,5 @@ public interface RequestService {
      * @throws IllegalArgumentException если запрос не принадлежит указанному пользователю
      * @throws NoSuchElementException если запрос с указанным ID не найден
      */
-    void delete(Long requestId, Long requesterId);
+    void deleteById(Long requestId, Long requesterId);
 }

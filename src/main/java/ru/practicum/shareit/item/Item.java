@@ -12,6 +12,8 @@ import ru.practicum.shareit.user.User;
 @EqualsAndHashCode(exclude = {"name", "description", "request", "available"})
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "items")
 public class Item {
 
     @Id

@@ -38,4 +38,14 @@ public class UserMapper implements GenericMapper<User, UserReqDTO, UserSendDTO> 
                 dto.getEmail()
         );
     }
+
+    public User toEntity(UserSendDTO dto) {
+        if (dto == null) return null;
+
+        User user = new User();
+        user.setId(dto.getId());
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+        return user;
+    }
 }

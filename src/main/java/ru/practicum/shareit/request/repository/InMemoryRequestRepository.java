@@ -1,4 +1,4 @@
-package ru.practicum.shareit.request.repository;
+/*package ru.practicum.shareit.request.repository;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -92,4 +92,4 @@ public class InMemoryRequestRepository implements RequestRepository {
         userIdToRequests.clear();
         nextId = 1L;
     }
-}
+}*/

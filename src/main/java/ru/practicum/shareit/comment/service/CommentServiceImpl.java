@@ -1,4 +1,4 @@
-package ru.practicum.shareit.comment.service;
+/*package ru.practicum.shareit.comment.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -95,9 +95,7 @@ public class CommentServiceImpl implements CommentService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Проверяет, что у пользователя есть завершённое бронирование для указанного товара
-     */
+
     private void validateBookingCompleted(Long bookerId, Long itemId) {
         Collection<Booking> bookings = bookingService.getItemBookingsInternal(itemId);
 
@@ -112,3 +110,4 @@ public class CommentServiceImpl implements CommentService {
         }
     }
 }
+*/

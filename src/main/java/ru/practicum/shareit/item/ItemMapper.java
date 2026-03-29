@@ -16,10 +16,10 @@ public class ItemMapper implements GenericMapper<Item, ItemReqDTO, ItemSendDTO> 
 
         return new ItemSendDTO(
                 item.getId(),
-                item.getOwnerId(),
+                item.getOwner(),
                 item.getName(),
                 item.getDescription(),
-                item.getRequestId(),
+                item.getRequest(),
                 item.getAvailable());
     }
 
@@ -32,7 +32,7 @@ public class ItemMapper implements GenericMapper<Item, ItemReqDTO, ItemSendDTO> 
         ItemReqDTO dto = new ItemReqDTO();
         dto.setName(item.getName());
         dto.setDescription(item.getDescription());
-        dto.setRequestId(item.getRequestId());
+        dto.setRequestId(item.getRequest().getId());
         dto.setAvailable(item.getAvailable());
         return dto;
     }
@@ -47,7 +47,6 @@ public class ItemMapper implements GenericMapper<Item, ItemReqDTO, ItemSendDTO> 
 
         item.setName(dto.getName());
         item.setDescription(dto.getDescription());
-        item.setRequestId(dto.getRequestId());
         item.setAvailable(dto.getAvailable());
         return item;
     }

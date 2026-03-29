@@ -1,4 +1,4 @@
-package ru.practicum.shareit.request;
+/*package ru.practicum.shareit.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -29,9 +29,9 @@ import java.util.List;
  * - Если запрос или пользователь не найдены, выбрасывается NoSuchElementException (404).
  * - При нарушении прав доступа или правил изменения статуса выбрасывается IllegalArgumentException (400).
  */
-@Slf4j
+/*@Slf4j
 @Validated
-@RestController
+//@RestController
 @RequestMapping("/requests")
 public class RequestController {
 
@@ -46,7 +46,7 @@ public class RequestController {
      * Проверяет существование пользователя по ID (передаётся в заголовке X-Requestor-User-Id).
      * При успешном создании возвращает ItemRequestSendDTO с присвоенным ID и временем создания.
      */
-    @PostMapping
+    /*@PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ItemRequestSendDTO create(
             @Valid
@@ -68,7 +68,7 @@ public class RequestController {
      * Проверяет права доступа (запрос должен принадлежать пользователю) и допустимость нового статуса.
      * Запрещено устанавливать статусы PENDING и RESPONDED, а также менять статус для CANCELLED и COMPLETED запросов.
      */
-    @PatchMapping("/{requestId}")
+    /*@PatchMapping("/{requestId}")
     @ResponseStatus(HttpStatus.OK)
     public ItemRequestSendDTO patchStatus(
             @Validated(OnUpdate.class)
@@ -85,7 +85,7 @@ public class RequestController {
      * Возвращает данные конкретного запроса по ID.
      * Если запрос не найден, выбрасывает NoSuchElementException.
      */
-    @GetMapping("/{requestId}")
+   /* @GetMapping("/{requestId}")
     @ResponseStatus(HttpStatus.OK)
     public ItemRequestSendDTO getByIdExternal(
             @Positive(message = "ID запроса должен быть положительным числом")
@@ -104,7 +104,7 @@ public class RequestController {
      * Если пользователь не найден, выбрасывает NoSuchElementException.
      * При отсутствии запросов возвращает пустой список.
      */
-    @GetMapping
+   /* @GetMapping
     @ResponseStatus(HttpStatus.OK)
     List<ItemRequestSendDTO> getAllByCurrentUser(
             @Positive(message = "ID пользователя должен быть положительным числом")
@@ -120,7 +120,7 @@ public class RequestController {
      * Возвращает все запросы в системе (доступно всем пользователям).
      * При отсутствии запросов возвращает пустой список.
      */
-    @GetMapping("/all")
+   /* @GetMapping("/all")
     @ResponseStatus(HttpStatus.OK)
     List<ItemRequestSendDTO> getAllRequests() {
         log.info("Получён запрос на получение всех запросов в системе");
@@ -136,7 +136,7 @@ public class RequestController {
      * Если запрос или пользователь не найдены, выбрасывает NoSuchElementException.
      * Статус ответа — NO_CONTENT (204) при успешном удалении.
      */
-    @DeleteMapping("/{requestId}")
+ /*   @DeleteMapping("/{requestId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(
             @Positive(message = "ID запроса должен быть положительным числом")
@@ -152,3 +152,4 @@ public class RequestController {
                 requestId, requestorId);
     }
 }
+*/

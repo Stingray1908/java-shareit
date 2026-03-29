@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.context.annotation.ComponentScan;
 import ru.practicum.shareit.common.ConflictException;
 import ru.practicum.shareit.user.dto.UserReqDTO;
 import ru.practicum.shareit.user.dto.UserSendDTO;
@@ -22,12 +23,14 @@ import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ComponentScan(basePackages = "ru.practicum.shareit.user")
 class UserJpaRepositoryServiceTest {
 
     @Autowired
     private UserJPARepository userRepository;
 
     private final UserMapper userMapper = new UserMapper();
+
     private UserJPAService userService;
 
     // Фиксированные тестовые данные

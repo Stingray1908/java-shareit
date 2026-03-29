@@ -1,4 +1,4 @@
-package ru.practicum.shareit.item.repository;
+/*package ru.practicum.shareit.item.repository;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -158,3 +158,4 @@ public class InMemoryItemRepository implements ItemRepository {
         nextId = 1L;
     }
 }
+*/

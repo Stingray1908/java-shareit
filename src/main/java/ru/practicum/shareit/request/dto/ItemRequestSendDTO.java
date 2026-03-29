@@ -2,6 +2,7 @@ package ru.practicum.shareit.request.dto;
 
 import lombok.Data;
 import ru.practicum.shareit.common.enums.RequestStatus;
+import ru.practicum.shareit.user.User;
 
 import java.time.LocalDateTime;
 
@@ -9,7 +10,7 @@ import java.time.LocalDateTime;
 public class ItemRequestSendDTO {
     private Long id;
     private String description;
-    private Long requester;
+    private User requester;
     private LocalDateTime created;
     private RequestStatus status;
 }

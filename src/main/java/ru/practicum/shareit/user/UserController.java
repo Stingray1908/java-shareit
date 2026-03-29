@@ -33,7 +33,7 @@ import java.util.Collection;
  */
 @Slf4j
 @Validated
-@RestController
+//@RestController
 @RequestMapping("/users")
 public class UserController {
 

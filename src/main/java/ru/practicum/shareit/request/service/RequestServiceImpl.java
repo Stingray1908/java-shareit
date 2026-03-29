@@ -1,4 +1,4 @@
-package ru.practicum.shareit.request.service;
+/*package ru.practicum.shareit.request.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,7 +14,7 @@ import ru.practicum.shareit.user.service.UserService;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-@Service
+//@Service
 @Slf4j
 public class RequestServiceImpl implements RequestService {
 
@@ -91,6 +91,11 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    public ItemRequest findActiveRequestByIdOrThrowInternal(Long requestId) {
+        return null;
+    }
+
+    @Override
     public void delete(Long requestId, Long requestorId) {
         ItemRequest existingRequest = getByIdForInternal(requestId);
         validateRequestOwnership(existingRequest, requestorId);
@@ -149,3 +154,5 @@ public class RequestServiceImpl implements RequestService {
                 .toList();
     }
 }
+
+*/

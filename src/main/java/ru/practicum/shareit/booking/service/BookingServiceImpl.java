@@ -1,4 +1,4 @@
-package ru.practicum.shareit.booking.service;
+/*package ru.practicum.shareit.booking.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -52,9 +52,9 @@ public class BookingServiceImpl implements BookingService {
         if ((item = itemService.getByIdInternal(booking.getItemId())) == null) {
             throw new NoSuchElementException("Вещь с ID: " + booking.getItemId() + " не найдена");
         }
-        if (Objects.equals(user.getId(), item.getOwnerId())) {
-            throw new IllegalArgumentException("Владелец не может бронировать свои же вещи");
-        }
+        //if (Objects.equals(user.getId(), item.getOwnerId())) {
+          //  throw new IllegalArgumentException("Владелец не может бронировать свои же вещи");
+        //}
 
         if (!item.getAvailable()) {
             throw new IllegalArgumentException("Вещь недоступна (available = false)");
@@ -194,11 +194,6 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    /**
-     * Проверяет корректность обязательных полей бронирования:
-     * bookerId, itemId, start, end.
-     * Убеждается, что start < end, start != end и start в будущем.
-     */
     private void validateBookingCreation(Booking booking) {
         if (booking.getBookerId() == null
                 || booking.getItemId() == null
@@ -216,10 +211,6 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalArgumentException("Время начала должно быть в будущем");
     }
 
-    /**
-     * Проверяет, есть ли у пользователя активная бронь (WAITING/APPROVED)
-     * на указанную вещь. Если есть — выбрасывает исключение.
-     */
 
     private void isItemAlreadyBookedByUser(NavigableSet<Booking> bookings, Booking booking) {
         boolean hasActiveBooking = bookings.stream()
@@ -237,11 +228,7 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    /**
-     * Проверяет пересечение временных интервалов новой брони с существующими.
-     * Учитывает случаи: частичное пересечение, стык по времени (конец = начало).
-     * При обнаружении пересечения выбрасывает исключение с указанием дат.
-     */
+
 
     private void isOverlapping(NavigableSet<Booking> bookings, Booking booking) {
         LocalDateTime newStart = booking.getStart();
@@ -271,13 +258,7 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    /**
-     * Валидирует изменение статуса брони владельцем вещи.
-     * Правила:
-     * - из WAITING → APPROVED или REJECTED;
-     * - из APPROVED → COMPLETED;
-     * - для остальных статусов изменения запрещены.
-     */
+
     private void validateOwnerStatusChange(BookingStatus currentStatus, BookingStatus newStatus) {
         switch (currentStatus) {
             case WAITING:
@@ -301,3 +282,4 @@ public class BookingServiceImpl implements BookingService {
     }
 }
 
+*/
