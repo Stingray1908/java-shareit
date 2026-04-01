@@ -3,16 +3,19 @@ package ru.practicum.shareit;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import ru.practicum.shareit.booking.BookingMapper;
+import ru.practicum.shareit.booking.repository.BookingJpaRepository;
 import ru.practicum.shareit.booking.service.BookingJpaService;
 import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.repository.ItemJPARepository;
 import ru.practicum.shareit.item.service.ItemJPAService;
+import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.request.RequestMapper;
 import ru.practicum.shareit.request.repository.RequestJpaRepository;
 import ru.practicum.shareit.request.service.RequestJpaService;
 import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.repository.UserJPARepository;
 import ru.practicum.shareit.user.service.UserJPAService;
+import ru.practicum.shareit.user.service.UserService;
 
 @Configuration
 public class TestServiceConfiguration {
@@ -60,8 +63,8 @@ public class TestServiceConfiguration {
     }
 
     @Bean
-    public BookingJpaService bookingJpaService(BookingMapper bookingMapper) {
-        return new BookingJpaService(bookingMapper);
+    public BookingJpaService bookingJpaService(BookingJpaRepository bookingRepository, UserService userService, ItemService itemService) {
+        return new BookingJpaService(bookingRepository, userService, itemService);
     }
 
 }

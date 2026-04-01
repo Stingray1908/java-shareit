@@ -14,13 +14,12 @@ public class ItemMapper implements GenericMapper<Item, ItemReqDTO, ItemSendDTO> 
             return null;
         }
 
-        return new ItemSendDTO(
-                item.getId(),
-                item.getOwner(),
-                item.getName(),
-                item.getDescription(),
-                item.getRequest(),
-                item.getAvailable());
+        ItemSendDTO dto = new ItemSendDTO();
+        dto.setId(item.getId());
+        dto.setName(item.getName());
+        dto.setDescription(item.getDescription());
+        dto.setAvailable(item.getAvailable());
+        return dto;
     }
 
     @Override

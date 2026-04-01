@@ -20,14 +20,17 @@ import ru.practicum.shareit.user.repository.UserJPARepository;
 import ru.practicum.shareit.user.service.UserJPAService;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(TestServiceConfiguration.class)
-public class BookingJpaRepoServiceTest {
+class BookingJpaRepoServiceTest {
 
     @Autowired
     private BookingJpaRepository bookingRepository;
@@ -49,7 +52,7 @@ public class BookingJpaRepoServiceTest {
 
     // Вспомогательные методы
     private LocalDateTime getFutureTime(int hours) {
-        return LocalDateTime.now().plusHours(hours);
+        return LocalDateTime.now().plusHours(hours).plusMinutes(1);
     }
 
     private BookingReqDto createBookingDto(Long itemId, Long bookerId, int startHours, int endHours) {
@@ -58,7 +61,6 @@ public class BookingJpaRepoServiceTest {
 
         BookingReqDto dto = new BookingReqDto();
         dto.setItemId(itemId);
-        dto.setBookerId(bookerId);
         dto.setStart(start);
         dto.setEnd(end);
         return dto;
@@ -90,246 +92,292 @@ public class BookingJpaRepoServiceTest {
         itemId = createTestItem(ownerId);
     }
 
-    // Тесты создания брони
     @Test
-    void create_shouldCreateBookingSuccessfully() {
-        BookingReqDto dto = createBookingDto(itemId, bookerId, 1, 2);
-        BookingSendDto result = bookingService.create(dto);
+    void create_ShouldCreateBooking_WhenValidData() {
+        // Given
+        BookingReqDto dto = createBookingDto(itemId, bookerId, 2, 4);
 
-        assertThat(result)
-                .hasFieldOrPropertyWithValue("status", BookingStatus.WAITING)
-                .hasFieldOrPropertyWithValue("booker.id", bookerId)
-                .hasFieldOrPropertyWithValue("item.id", itemId);
-        assertThat(result.getId()).isNotNull();
+        // When
+        BookingSendDto result = bookingService.create(dto, bookerId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getStatus()).isEqualTo(BookingStatus.WAITING);
+        assertThat(result.getItem().getId()).isEqualTo(itemId);
+        assertThat(result.getBooker().getId()).isEqualTo(bookerId);
     }
 
     @Test
-    void create_shouldThrowException_WhenUserTriesToBookOwnItem() {
-        BookingReqDto dto = createBookingDto(itemId, ownerId, 1, 2);
+    void create_ShouldThrowException_WhenUserTriesToBookOwnItem() {
+        // Given
+        BookingReqDto dto = createBookingDto(itemId, ownerId, 2, 4);
 
-        assertThatThrownBy(() -> bookingService.create(dto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Пользователь не может бронировать свои вещи");
+        // When & Then
+        assertThrows(IllegalArgumentException.class,
+                () -> bookingService.create(dto, ownerId),
+                "Пользователь не может бронировать свои вещи"
+        );
     }
 
     @Test
-    void create_shouldThrowException_WhenItemIsNotAvailable() {
+    void create_ShouldThrowException_WhenItemIsUnavailable() {
+        // Given
         makeItemUnavailable(itemId);
-        BookingReqDto dto = createBookingDto(itemId, bookerId, 1, 2);
+        BookingReqDto dto = createBookingDto(itemId, bookerId, 2, 4);
 
-        assertThatThrownBy(() -> bookingService.create(dto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Вещь недоступна (available = false)");
+        // When & Then
+        assertThrows(IllegalArgumentException.class,
+                () -> bookingService.create(dto, bookerId),
+                "Вещь недоступна (available = false)"
+        );
     }
 
     @Test
-    void create_shouldThrowException_WhenBookingTimeOverlaps() {
-        // Создаём существующую бронь
-        bookingService.create(createBookingDto(itemId, bookerId, 1, 3));
+    void create_ShouldThrowException_WhenDatesOverlap() {
+        // Given
+        // Создаём существующее бронирование
+        BookingReqDto existingDto = createBookingDto(itemId, anotherBookerId, 1, 5);
+        bookingService.create(existingDto, anotherBookerId);
 
-        // Пытаемся создать пересекающуюся
-        BookingReqDto newDto = createBookingDto(itemId, anotherBookerId, 2, 4);
+        // Пытаемся создать пересекающееся бронирование
+        BookingReqDto overlappingDto = createBookingDto(itemId, bookerId, 3, 6);
 
-        assertThatThrownBy(() -> bookingService.create(newDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("время уже забронировано");
+        // When & Then
+        assertThrows(IllegalArgumentException.class,
+                () -> bookingService.create(overlappingDto, bookerId),
+                "Время уже забронировано"
+        );
     }
 
     @Test
-    void create_shouldThrowException_WhenStartAfterEnd() {
-        BookingReqDto dto = createBookingDto(itemId, bookerId, 2, 1);
+    void approveOrRejectBooking_ShouldApprove_WhenValidRequest() {
+        // Given
+        BookingReqDto dto = createBookingDto(itemId, bookerId, 2, 4);
+        BookingSendDto createdBooking = bookingService.create(dto, bookerId);
 
-        assertThatThrownBy(() -> bookingService.create(dto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Время начала не может быть после старта");
+        // When
+        BookingSendDto approvedBooking = bookingService.approveOrRejectBooking(createdBooking.getId(), true, ownerId);
+
+        // Then
+        assertThat(approvedBooking.getStatus()).isEqualTo(BookingStatus.APPROVED);
     }
 
     @Test
-    void create_shouldThrowException_WhenStartEqualsEnd() {
-        LocalDateTime time = getFutureTime(1);
-        BookingReqDto dto = new BookingReqDto();
-        dto.setItemId(itemId);
-        dto.setBookerId(bookerId);
-        dto.setStart(time);
-        dto.setEnd(time);
+    void approveOrRejectBooking_ShouldReject_WhenValidRequest() {
+        // Given
+        BookingReqDto dto = createBookingDto(itemId, bookerId, 2, 4);
+        BookingSendDto createdBooking = bookingService.create(dto, bookerId);
 
-        assertThatThrownBy(() -> bookingService.create(dto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Время начала окончания брони не может совпадать");
-    }
+        // When
+        BookingSendDto rejectedBooking = bookingService.approveOrRejectBooking(createdBooking.getId(), false, ownerId);
 
-    // Тесты обновления статуса
-    private BookingSendDto createAndApproveBooking() {
-        BookingSendDto created = bookingService.create(createBookingDto(itemId, bookerId, 1, 2));
-        BookingReqDto approveDto = new BookingReqDto();
-        approveDto.setId(created.getId());
-        approveDto.setStatus(BookingStatus.APPROVED);
-        return bookingService.patchBooking(approveDto, ownerId);
+        // Then
+        assertThat(rejectedBooking.getStatus()).isEqualTo(BookingStatus.REJECTED);
     }
 
     @Test
-    void patchBooking_shouldUpdateStatusSuccessfully_WhenOwnerApproves() {
-        BookingSendDto created = bookingService.create(createBookingDto(itemId, bookerId, 1, 2));
+    void approveOrRejectBooking_ShouldThrowException_WhenNotOwner() {
+        // Given
+        BookingReqDto dto = createBookingDto(itemId, bookerId, 2, 4);
+        BookingSendDto createdBooking = bookingService.create(dto, bookerId);
 
-        BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setId(created.getId());
-        patchDto.setStatus(BookingStatus.APPROVED);
-
-        BookingSendDto updated = bookingService.patchBooking(patchDto, ownerId);
-
-        assertThat(updated).hasFieldOrPropertyWithValue("status", BookingStatus.APPROVED);
+        // When & Then
+        assertThrows(SecurityException.class,
+                () -> bookingService.approveOrRejectBooking(createdBooking.getId(), true, bookerId),
+                "Пользователь Id: " + bookerId + " не является владельцем вещи и не может подтверждать/отклонять бронь"
+        );
     }
 
     @Test
-    void patchBooking_shouldUpdateStatusSuccessfully_WhenBookerCancels() {
-        BookingSendDto created = bookingService.create(createBookingDto(itemId, bookerId, 1, 2));
+    void getByIdForBookerOrOwner_ShouldReturnBooking_WhenUserIsBooker() {
+        // Given
+        BookingReqDto dto = createBookingDto(itemId, bookerId, 2, 4);
+        BookingSendDto createdBooking = bookingService.create(dto, bookerId);
 
-        BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setId(created.getId());
-        patchDto.setStatus(BookingStatus.CANCELLED);
+        // When
+        BookingSendDto result = bookingService.getByIdForBookerOrOwner(createdBooking.getId(), bookerId);
 
-        BookingSendDto updated = bookingService.patchBooking(patchDto, bookerId);
-
-        assertThat(updated).hasFieldOrPropertyWithValue("status", BookingStatus.CANCELLED);
+        // Then
+        assertThat(result.getId()).isEqualTo(createdBooking.getId());
     }
 
     @Test
-    void patchBooking_shouldReturnSameBooking_WhenStatusNotChanged() {
-        BookingSendDto created = bookingService.create(createBookingDto(itemId, bookerId, 1, 2));
+    void getByIdForBookerOrOwner_ShouldReturnBooking_WhenUserIsOwner() {
+        // Given
+        BookingReqDto dto = createBookingDto(itemId, bookerId, 2, 4);
+        BookingSendDto createdBooking = bookingService.create(dto, bookerId);
 
-        BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setId(created.getId());
-        patchDto.setStatus(BookingStatus.WAITING);
+        // When
+        BookingSendDto result = bookingService.getByIdForBookerOrOwner(createdBooking.getId(), ownerId);
 
-        BookingSendDto result = bookingService.patchBooking(patchDto, ownerId);
-
-        assertThat(result).hasFieldOrPropertyWithValue("status", BookingStatus.WAITING);
+        // Then
+        assertThat(result.getId()).isEqualTo(createdBooking.getId());
     }
 
     @Test
-    void patchBooking_shouldThrowException_WhenBookingNotFound() {
-        BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setId(999L);
-        patchDto.setStatus(BookingStatus.APPROVED);
+    void getByIdForBookerOrOwner_ShouldThrowException_WhenUnauthorizedAccess() {
+        // Given
+        BookingReqDto dto = createBookingDto(itemId, bookerId, 2, 4);
+        BookingSendDto createdBooking = bookingService.create(dto, bookerId);
+        Long unauthorizedUserId = anotherBookerId;
 
-        assertThatThrownBy(() -> bookingService.patchBooking(patchDto, ownerId))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Бронь с Id: 999 с активным статусом не найдена");
+        // When & Then
+        assertThrows(SecurityException.class,
+                () -> bookingService.getByIdForBookerOrOwner(createdBooking.getId(), unauthorizedUserId),
+                "Пользователь Id: " + unauthorizedUserId + " пытается получить бронь пользователя Id: " + bookerId
+        );
     }
 
     @Test
-    void patchBooking_shouldThrowException_WhenUserHasNoPermissions() {
-        BookingSendDto created = bookingService.create(createBookingDto(itemId, bookerId, 1, 2));
+    void getBookingsByState_ShouldReturnAllBookings_WhenStateIsAll() {
+        // Given
+        BookingReqDto dto1 = createBookingDto(itemId, bookerId, 2, 4);
+        BookingReqDto dto2 = createBookingDto(itemId, bookerId, 5, 7);
+        bookingService.create(dto1, bookerId);
+        bookingService.create(dto2, bookerId);
 
-        BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setId(created.getId());
-        patchDto.setStatus(BookingStatus.APPROVED);
+        // When
+        Collection<BookingSendDto> result = bookingService.getBookingsByState(bookerId, "ALL");
 
-        assertThatThrownBy(() -> bookingService.patchBooking(patchDto, anotherBookerId))
-                .isInstanceOf(SecurityException.class)
-                .hasMessageContaining("не имеет прав на изменение брони");
+        // Then
+        assertThat(result).hasSize(2);
     }
 
     @Test
-    void patchBooking_shouldThrowException_WhenBookerTriesToChangeToNonCancelledStatus() {
-        BookingSendDto created = bookingService.create(createBookingDto(itemId, bookerId, 1, 2));
+    void getBookingsByState_ShouldReturnWaitingBookings_WhenStateIsWaiting() {
+        // Given
+        BookingReqDto waitingDto1 = createBookingDto(itemId, bookerId, 2, 4);
+        BookingReqDto waitingDto2 = createBookingDto(itemId, bookerId, 5, 7);
+        bookingService.create(waitingDto1, bookerId);
+        bookingService.create(waitingDto2, bookerId);
 
-        BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setId(created.getId());
-        patchDto.setStatus(BookingStatus.APPROVED);
+        // Создаём подтверждённое бронирование — оно не должно попасть в результат
+        BookingReqDto approvedDto = createBookingDto(itemId, bookerId, 8, 10);
+        BookingSendDto approvedBooking = bookingService.create(approvedDto, bookerId);
+        bookingService.approveOrRejectBooking(approvedBooking.getId(), true, ownerId);
 
-        assertThatThrownBy(() -> bookingService.patchBooking(patchDto, bookerId))
-                .isInstanceOf(SecurityException.class)
-                .hasMessageContaining("может установить только статус CANCELLED");
+        // When
+        Collection<BookingSendDto> result = bookingService.getBookingsByState(bookerId, "WAITING");
+
+        // Then
+        assertThat(result).hasSize(2);
+        result.forEach(booking -> assertThat(booking.getStatus()).isEqualTo(BookingStatus.WAITING));
     }
 
     @Test
-    void patchBooking_shouldThrowException_WhenOwnerTriesToSetCancelled() {
-        BookingSendDto created = bookingService.create(createBookingDto(itemId, bookerId, 1, 2));
+    void getBookingsByOwnerState_ShouldReturnBookingsForOwner_WhenStateIsAll() {
+        // Given
+        BookingReqDto dto1 = createBookingDto(itemId, bookerId, 2, 4);
+        BookingReqDto dto2 = createBookingDto(itemId, anotherBookerId, 5, 7);
+        bookingService.create(dto1, bookerId);
+        bookingService.create(dto2, anotherBookerId);
 
-        BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setId(created.getId());
-        patchDto.setStatus(BookingStatus.CANCELLED);
+        // When
+        Collection<BookingSendDto> result = bookingService.getBookingsByOwnerState(ownerId, "ALL");
 
-        String expectedMessage = String.format(
-                ("Владелец вещи Id: %d не может установить статус CANCELLED для брони Id: %d"), ownerId, created.getId());
-
-        assertThatThrownBy(() -> bookingService.patchBooking(patchDto, ownerId))
-                .isInstanceOf(SecurityException.class)
-                .hasMessage(expectedMessage);
+        // Then
+        assertThat(result).hasSize(2);
     }
 
     @Test
-    void patchBooking_shouldThrowException_WhenTransitionIsInvalid() {
-        BookingSendDto created = createAndApproveBooking();
-
-        BookingReqDto invalidPatchDto = new BookingReqDto();
-        invalidPatchDto.setId(created.getId());
-        invalidPatchDto.setStatus(BookingStatus.WAITING);
-
-        String expectedMessage = String.format(
-        ("Владелец вещи Id: %d не может установить статус WAITING для брони Id: %d"), ownerId, created.getId());
-
-        assertThatThrownBy(() -> bookingService.patchBooking(invalidPatchDto, ownerId))
-                .isInstanceOf(SecurityException.class)
-                .hasMessage(expectedMessage);
+    void parseBookingState_ShouldThrowException_ForInvalidState() {
+        // When & Then
+        assertThrows(IllegalArgumentException.class,
+                () -> bookingService.getBookingsByState(bookerId, "INVALID_STATE"),
+                "Недопустимое значение state: INVALID_STATE"
+        );
     }
 
     @Test
-    void patchBooking_shouldThrowException_WhenChangingFinalStatus() {
-        BookingSendDto created = bookingService.create(createBookingDto(itemId, bookerId, 1, 2));
+    void validateDates_ShouldThrowException_WhenStartAfterEnd() {
+        // Given
+        LocalDateTime start = getFutureTime(5);
+        LocalDateTime end = getFutureTime(3);
 
-        // Отменяем бронь — устанавливаем финальный статус
-        BookingReqDto cancelDto = new BookingReqDto();
-        cancelDto.setId(created.getId());
-        cancelDto.setStatus(BookingStatus.CANCELLED);
-        bookingService.patchBooking(cancelDto, bookerId);
-
-        // Пытаемся изменить финальный статус на APPROVED
-        BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setId(created.getId());
-        patchDto.setStatus(BookingStatus.APPROVED);
-
-        assertThatThrownBy(() -> bookingService.patchBooking(patchDto, ownerId))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Бронь с Id: " + created.getId() + " с активным статусом не найдена");
+        // When & Then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    BookingReqDto dto = createBookingDto(itemId, bookerId, 5, 3);
+                    bookingService.create(dto, bookerId);
+                }
+        );
+        assertThat(exception.getMessage()).contains("Время начала не может быть после времени окончания");
     }
 
     @Test
-    void patchBooking_shouldAllowBookerToCancelApprovedBooking() {
-        BookingSendDto approved = createAndApproveBooking();
+    void validateDates_ShouldThrowException_WhenStartEqualsEnd() {
+        // Given
+        LocalDateTime sameTime = getFutureTime(2);
 
-        BookingReqDto cancelDto = new BookingReqDto();
-        cancelDto.setId(approved.getId());
-        cancelDto.setStatus(BookingStatus.CANCELLED);
-
-        BookingSendDto updated = bookingService.patchBooking(cancelDto, bookerId);
-
-        assertThat(updated).hasFieldOrPropertyWithValue("status", BookingStatus.CANCELLED);
+        // When & Then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    BookingReqDto dto = new BookingReqDto();
+                    dto.setItemId(itemId);
+                    dto.setStart(sameTime);
+                    dto.setEnd(sameTime);
+                    bookingService.create(dto, bookerId);
+                }
+        );
+        assertThat(exception.getMessage()).contains("Время начала и окончания брони не может совпадать");
     }
 
     @Test
-    void patchBooking_shouldAllowOwnerToSetCompletedFromApproved() {
-        BookingSendDto approved = createAndApproveBooking();
+    void validateDates_ShouldThrowException_WhenStartInPast() {
+        // Given
+        LocalDateTime pastTime = LocalDateTime.now().minusHours(2);
 
-        BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setId(approved.getId());
-        patchDto.setStatus(BookingStatus.COMPLETED);
-
-        BookingSendDto updated = bookingService.patchBooking(patchDto, ownerId);
-
-        assertThat(updated).hasFieldOrPropertyWithValue("status", BookingStatus.COMPLETED);
+        // When & Then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    BookingReqDto dto = new BookingReqDto();
+                    dto.setItemId(itemId);
+                    dto.setStart(pastTime);
+                    dto.setEnd(pastTime.plusHours(2));
+                    bookingService.create(dto, bookerId);
+                }
+        );
+        assertThat(exception.getMessage()).contains("Время начала должно быть в будущем");
     }
 
     @Test
-    void patchBooking_shouldAllowStatusUpdate() {
-        BookingSendDto created = bookingService.create(createBookingDto(itemId, bookerId, 1, 2));
+    void findByIdOrThrowInternal_ShouldThrowException_WhenBookingNotFound() {
+        // Given
+        Long nonExistentId = 999L;
 
-        BookingReqDto patchDto = new BookingReqDto();
-        patchDto.setId(created.getId());
-        patchDto.setStatus(BookingStatus.REJECTED);
-
-        assertDoesNotThrow(() -> bookingService.patchBooking(patchDto, ownerId));
+        // When & Then
+        assertThrows(NoSuchElementException.class,
+                () -> bookingService.findByIdOrThrowInternal(nonExistentId),
+                "Бронь с Id: " + nonExistentId + " не существует"
+        );
     }
+
+    @Test
+    void getBookingsByOwnerState_ShouldReturnRejectedBookingsForOwner() {
+        // Given
+        BookingReqDto rejectedDto1 = createBookingDto(itemId, bookerId, 2, 4);
+        BookingReqDto rejectedDto2 = createBookingDto(itemId, anotherBookerId, 5, 7);
+        BookingSendDto booking1 = bookingService.create(rejectedDto1, bookerId);
+        BookingSendDto booking2 = bookingService.create(rejectedDto2, anotherBookerId);
+
+        // Отклоняем бронирования
+        bookingService.approveOrRejectBooking(booking1.getId(), false, ownerId);
+        bookingService.approveOrRejectBooking(booking2.getId(), false, ownerId);
+
+        // Создаём подтверждённое бронирование — оно не должно попасть в результат
+        BookingReqDto approvedDto = createBookingDto(itemId, bookerId, 8, 10);
+        BookingSendDto approvedBooking = bookingService.create(approvedDto, bookerId);
+        bookingService.approveOrRejectBooking(approvedBooking.getId(), true, ownerId);
+
+        // When
+        Collection<BookingSendDto> result = bookingService.getBookingsByOwnerState(ownerId, "REJECTED");
+
+        // Then
+        assertThat(result).hasSize(2);
+        result.forEach(booking -> assertThat(booking.getStatus()).isEqualTo(BookingStatus.REJECTED));
+    }
+
 }
-

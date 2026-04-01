@@ -1,17 +1,20 @@
 package ru.practicum.shareit.item.dto;
 
+import lombok.Data;
 import lombok.Value;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.dto.ItemRequestSendDTO;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.dto.UserSendDTO;
 
-@Value
+@Data
 public class ItemSendDTO {
     Long id;
-    User owner;
+    UserSendDTO owner;
     String name;
     String description;
-    ItemRequest request;
+    ItemRequestSendDTO request;
     Boolean available;
 }
 

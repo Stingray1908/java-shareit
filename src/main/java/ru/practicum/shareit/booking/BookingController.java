@@ -1,4 +1,4 @@
-/*package ru.practicum.shareit.booking;
+package ru.practicum.shareit.booking;
 
 import jakarta.validation.constraints.Positive;
 import lombok.extern.slf4j.Slf4j;
@@ -9,38 +9,16 @@ import ru.practicum.shareit.booking.dto.BookingReqDto;
 import ru.practicum.shareit.booking.dto.BookingSendDto;
 import ru.practicum.shareit.booking.service.BookingService;
 import ru.practicum.shareit.common.constants.HttpHeader;
-import ru.practicum.shareit.common.groups.OnCreate;
-import ru.practicum.shareit.common.groups.OnUpdate;
 
 import java.util.Collection;
 
-/**
- * REST‑контроллер для управления бронированиями вещей.
- * Предоставляет API‑методы для создания, обновления, получения и удаления бронирований.
- * <p>
- * Основные правила бизнес‑логики:
- * - При создании статус брони всегда устанавливается как {@code WAITING}.
- * - Пользователь не может бронировать свои собственные вещи.
- * - Вещь должна быть доступна для бронирования ({@code available = true}).
- * - Запрещено создавать пересекающиеся бронирования для одной вещи.
- * - Время начала брони должно быть в будущем и меньше времени окончания.
- * - Пользователь не может иметь несколько активных бронирований одной вещи.
- * - {@code Booker} (создатель брони) может:
- * - отменить бронь (статус {@code CANCELED});
- * - удалить бронь.
- * - {@code Owner} (владелец вещи) может устанавливать статусы:
- * - из {@code WAITING} → {@code APPROVED} или {@code REJECTED};
- * - из {@code APPROVED} → {@code COMPLETED};
- * - нельзя изменить статус для {@code REJECTED}, {@code CANCELED}, {@code COMPLETED}.
- * - Доступ к просмотру брони имеют только {@code Booker} или {@code Owner}.
- */
-/*@Slf4j
+@Slf4j
 @Validated
 @RestController
 @RequestMapping("/bookings")
 public class BookingController {
 
-    BookingService service;
+    private final BookingService service;
 
     public BookingController(BookingService bookingService) {
         this.service = bookingService;
@@ -51,82 +29,70 @@ public class BookingController {
      * Устанавливает статус WAITING. Проверяет доступность вещи, корректность дат и права пользователя.
      * ID пользователя передаётся в заголовке X-Booker-User-Id.
      */
-    /*@PostMapping
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public BookingSendDto addBooking(@RequestBody
-                                     @Validated(OnCreate.class) BookingReqDto bookingReqDto,
-                                     @Positive(message = "ID пользователя должен быть положительным числом")
-                                     @RequestHeader(HttpHeader.X_BOOKER_USER_ID) Long bookerId) {
-        bookingReqDto.setBookerId(bookerId);
-        return service.addBooking(bookingReqDto);
+    public BookingSendDto addBooking(
+            @RequestBody @Validated BookingReqDto bookingReqDto,
+            @Positive(message = "ID пользователя должен быть положительным числом")
+            @RequestHeader(HttpHeader.X_BOOKER_USER_ID) Long bookerId) {
+        return service.create(bookingReqDto, bookerId);
     }
 
     /**
-     * Обновляет статус существующего бронирования.
-     * Booker может установить только CANCELED. Owner — APPROVED, REJECTED или COMPLETED.
-     * Проверяет права доступа и ограничения по статусам (например, после APPROVED возможен только COMPLETED).
+     * Подтверждает или отклоняет запрос на бронирование (только для владельца вещи).
+     *
+     * @param bookingId ID бронирования
+     * @param approved  true для APPROVED, false для REJECTED
+     * @param userId    ID пользователя (владельца вещи)
+     * @return DTO с данными обновлённого бронирования
      */
-   /* @PatchMapping("/{id}")
+    @PatchMapping("/{bookingId}")
     @ResponseStatus(HttpStatus.OK)
-    public BookingSendDto patchBooking(@RequestBody @Validated(OnUpdate.class) BookingReqDto bookingReqDto,
-
-                                       @PathVariable @Positive(message = "ID брони должен быть положительным числом")
-                                       Long id,
-                                       @Positive(message = "ID пользователя должен быть положительным числом")
-                                       @RequestHeader(HttpHeader.X_USER_ID) Long userId) {
-        bookingReqDto.setId(id);
-        return service.patchBooking(bookingReqDto, userId);
+    public BookingSendDto approveOrRejectBooking(
+            @PathVariable @Positive(message = "ID брони должен быть положительным числом") Long bookingId,
+            @RequestParam boolean approved,
+            @Positive(message = "ID пользователя должен быть положительным числом")
+            @RequestHeader(HttpHeader.X_USER_ID) Long userId) {
+        return service.approveOrRejectBooking(bookingId, approved, userId);
     }
 
     /**
      * Возвращает информацию о конкретном бронировании.
      * Доступ разрешён только Booker (создателю брони) или Owner (владельцу вещи).
      */
-/*    @GetMapping("/{bookingId}")
+    @GetMapping("/{bookingId}")
     @ResponseStatus(HttpStatus.OK)
-    public BookingSendDto getBooking(@Positive(message = "ID пользователя должен быть положительным числом")
-                                     @PathVariable Long bookingId,
-
-                                     @Positive(message = "ID пользователя должен быть положительным числом")
-                                     @RequestHeader(HttpHeader.X_USER_ID) Long booker) {
-        return service.getBooking(bookingId, booker);
+    public BookingSendDto getBooking(
+            @PathVariable @Positive(message = "ID брони должен быть положительным числом") Long bookingId,
+            @Positive(message = "ID пользователя должен быть положительным числом")
+            @RequestHeader(HttpHeader.X_USER_ID) Long userId) {
+        return service.getByIdForBookerOrOwner(bookingId, userId);
     }
 
     /**
-     * Возвращает список всех бронирований для указанной вещи.
-     * Метод общедоступный — не требует специальных прав доступа.
+     * Возвращает бронирования пользователя с фильтрацией по состоянию.
+     * По умолчанию возвращает все бронирования (state=ALL).
+     * Поддерживаемые состояния: ALL, CURRENT, PAST, FUTURE, WAITING, REJECTED.
      */
-   /* @GetMapping("/items/{itemId}")
+    @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public Collection<BookingSendDto> getBooking(@Positive(message = "ID вещи должен быть положительным числом")
-                                                 @PathVariable Long itemId) {
-        return service.getItemBookingsExternal(itemId);
+    public Collection<BookingSendDto> getBookings(
+            @Positive(message = "ID пользователя должен быть положительным числом")
+            @RequestHeader(HttpHeader.X_USER_ID) Long userId,
+            @RequestParam(defaultValue = "ALL") String state) {
+        return service.getBookingsByState(userId, state);
     }
 
     /**
-     * Возвращает все бронирования, созданные указанным пользователем.
-     * Если бронирований нет, возвращает пустой массив. Проверяет существование пользователя.
+     * Возвращает бронирования для всех вещей текущего пользователя (владельца).
+     * Доступ только для владельца вещей.
      */
-  /*  @GetMapping
+    @GetMapping("/owner")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<BookingSendDto> getCreatedBookings(@Positive(message = "ID пользователя должен быть положительным числом")
-                                                         @RequestHeader(HttpHeader.X_USER_ID) Long id) {
-        return service.getCreatedBookings(id);
+    public Collection<BookingSendDto> getOwnerBookings(
+            @Positive(message = "ID пользователя должен быть положительным числом")
+            @RequestHeader(HttpHeader.X_USER_ID) Long ownerId,
+            @RequestParam(defaultValue = "ALL") String state) {
+        return service.getBookingsByOwnerState(ownerId, state);
     }
-
-    /**
-     * Удаляет существующее бронирование.
-     * Доступно только для Booker — создателя брони. Проверяет существование бронирования.
-     */
-   /* @DeleteMapping("/{bookingId}")
-    @ResponseStatus(HttpStatus.OK)
-    public void deleteBooking(@Positive(message = "ID пользователя должен быть положительным числом")
-                              @PathVariable Long bookingId,
-
-                              @Positive(message = "ID пользователя должен быть положительным числом")
-                              @RequestHeader(HttpHeader.X_BOOKER_USER_ID) Long booker) {
-        service.deleteBooking(bookingId, booker);
-    }
-
 }
-*/

@@ -1,17 +1,14 @@
 package ru.practicum.shareit.booking.service;
 
-import io.micrometer.core.instrument.config.validate.ValidationException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.util.InternalException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingMapper;
 import ru.practicum.shareit.booking.dto.BookingReqDto;
 import ru.practicum.shareit.booking.dto.BookingSendDto;
 import ru.practicum.shareit.booking.repository.BookingJpaRepository;
-import ru.practicum.shareit.booking.repository.BookingRepository;
+import ru.practicum.shareit.common.enums.BookingState;
 import ru.practicum.shareit.common.enums.BookingStatus;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.ItemMapper;
@@ -20,185 +17,185 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.service.UserService;
 
-import java.awt.print.Book;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @RequiredArgsConstructor
 @Service("BookingJpaService")
 public class BookingJpaService implements BookingService {
 
-    @Autowired
-    private BookingJpaRepository bookingRepository;
-
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private ItemService itemService;
-
-    final private BookingMapper bookingMapper;
-
-    // Константы статусов
-    private static final Set<BookingStatus> ACTIVE_STATUSES = Set.of(
-            BookingStatus.WAITING,
-            BookingStatus.APPROVED
-    );
-
-    private static final Set<BookingStatus> FINAL_STATUSES = Set.of(
-            BookingStatus.CANCELLED,
-            BookingStatus.COMPLETED,
-            BookingStatus.REJECTED
-    );
-
-    // Правила переходов между статусами
-    private static final Map<BookingStatus, Set<BookingStatus>> VALID_TRANSITIONS = Map.of(
-            BookingStatus.WAITING, Set.of(BookingStatus.APPROVED, BookingStatus.REJECTED, BookingStatus.CANCELLED),
-            BookingStatus.APPROVED, Set.of(BookingStatus.COMPLETED, BookingStatus.CANCELLED)
-    );
-
+    private final BookingJpaRepository bookingRepository;
+    private final UserService userService;
+    private final ItemService itemService;
+    private final BookingMapper bookingMapper = new BookingMapper();
+    private final UserMapper userMapper = new UserMapper();
+    private final ItemMapper itemMapper = new ItemMapper();
 
     @Override
     @Transactional
-    public BookingSendDto create(BookingReqDto dto) {
-        System.out.println(bookingRepository.findAll());
-        Booking booking = bookingMapper.toEntity(dto);
-        validateBookingDate(booking);
-
-        User booker = userService.getByIdOrThrowInternal(dto.getBookerId());
+    public BookingSendDto create(BookingReqDto dto, Long bookerId) {
+        User booker = userService.getByIdOrThrowInternal(bookerId);
         Item item = itemService.getByIdOrThrowInternal(dto.getItemId());
 
-        if (Objects.equals(item.getOwner().getId(), dto.getBookerId()))
-            throw new IllegalArgumentException("Пользователь не может бронировать свои вещи");
+        validateBooking(dto, bookerId, item);
 
-        if (!item.getAvailable()) {
-            throw new IllegalArgumentException("Вещь недоступна (available = false)");
-        }
-
-        if (bookingRepository.checkOverLapBookings(item.getId(), booking.getStart(), booking.getEnd())) {
-            throw new IllegalArgumentException("время уже забронировано");
-        }
-
-        System.out.println(bookingRepository.findAll());
-
+        Booking booking = bookingMapper.toEntity(dto);
         booking.setBooker(booker);
         booking.setItem(item);
         booking.setStatus(BookingStatus.WAITING);
 
-        Booking created = bookingRepository.save(booking);
-        BookingSendDto response = bookingMapper.toSendDto(created);
-        response.setBooker(new UserMapper().toSendDto(booker));
-        response.setItem(new ItemMapper().toSendDto(item));
-        return response;
+        return toSendDto(bookingRepository.save(booking));
     }
 
-    private void validateBookingDate(Booking booking) {
+    private void validateBooking(BookingReqDto dto, Long bookerId, Item item) {
+        if (Objects.equals(item.getOwner().getId(), bookerId))
+            throw new IllegalArgumentException("Пользователь не может бронировать свои вещи");
 
-        if (booking.getStart().isAfter(booking.getEnd()))
-            throw new IllegalArgumentException("Время начала не может быть после старта");
+        if (!item.getAvailable())
+            throw new IllegalArgumentException("Вещь недоступна (available = false)");
 
-        if (booking.getStart().equals(booking.getEnd()))
-            throw new IllegalArgumentException("Время начала окончания брони не может совпадать");
+        if (bookingRepository.checkOverLapBookings(item.getId(), dto.getStart(), dto.getEnd()))
+            throw new IllegalArgumentException("Время уже забронировано");
 
-        if (booking.getStart().isBefore(LocalDateTime.now()))
+        validateDates(dto.getStart(), dto.getEnd());
+    }
+
+    private void validateDates(LocalDateTime start, LocalDateTime end) {
+        if (start.isAfter(end))
+            throw new IllegalArgumentException("Время начала не может быть после времени окончания");
+
+        if (start.equals(end))
+            throw new IllegalArgumentException("Время начала и окончания брони не может совпадать");
+
+        if (start.isBefore(LocalDateTime.now()))
             throw new IllegalArgumentException("Время начала должно быть в будущем");
     }
 
-    private void validateStatusTransition(BookingStatus current, BookingStatus newStatus) {
-        if (FINAL_STATUSES.contains(current)) {
-            throw new SecurityException(
-                    String.format("Статус %s является финальным и не может быть изменён", current.name()));
-        }
+    @Override
+    @Transactional
+    public BookingSendDto approveOrRejectBooking(Long bookingId, boolean approved, Long userId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NoSuchElementException("Бронь с Id: " + bookingId + " не найдена"));
 
-        Set<BookingStatus> allowedTransitions = VALID_TRANSITIONS.getOrDefault(current, Set.of());
-        if (!allowedTransitions.contains(newStatus)) {
-            throw new SecurityException(
-                    String.format("Недопустимый переход из статуса %s в статус %s", current.name(), newStatus.name()));
-        }
-    }
-
-    private void validateStatusChangePermissions(
-            Booking booking,
-            Long userId,
-            Long bookerId,
-            Long itemOwnerId,
-            BookingStatus newStatus
-    ) {
-        boolean isOwner = Objects.equals(itemOwnerId, userId);
-        boolean isBooker = Objects.equals(bookerId, userId);
-
-        if (!isOwner && !isBooker) {
-            throw new SecurityException(
-                    String.format("Пользователь Id: %d не имеет прав на изменение брони Id: %d", userId, booking.getId()));
-        }
-
-        if (isBooker && !newStatus.equals(BookingStatus.CANCELLED)) {
-            throw new SecurityException(
-                    String.format("Пользователь Id: %d может установить только статус CANCELLED для своей брони", userId));
-        }
-
-        if (isOwner && (newStatus.equals(BookingStatus.WAITING) || newStatus.equals(BookingStatus.CANCELLED))) {
-            throw new SecurityException(
-                    String.format("Владелец вещи Id: %d не может установить статус %s для брони Id: %d",
-                            itemOwnerId, newStatus.name(), booking.getId()));
-        }
-    }
-
-   @Override
-    public BookingSendDto patchBooking(BookingReqDto reqDto, Long userId) {
-
-        Booking booking = bookingRepository.findByIdWithActiveStatus(reqDto.getId());
-        if (booking == null) {
-            throw new IllegalArgumentException("Бронь с Id: " + reqDto.getId() + " с активным статусом не найдена");
-        }
-
-        BookingStatus currentStatus = booking.getStatus();
-        BookingStatus newStatus = reqDto.getStatus();
-
-        // Оптимизация: если статус не изменился
-        if (currentStatus.equals(newStatus)) {
-            return bookingMapper.toSendDto(booking);
-        }
-
-        Long bookerId = booking.getBooker().getId();
         Long itemOwnerId = booking.getItem().getOwner().getId();
+        if (!Objects.equals(itemOwnerId, userId)) {
+            throw new SecurityException(
+                    String.format("Пользователь Id: %d не является владельцем вещи и не может подтверждать/отклонять бронь", userId));
+        }
 
-        validateStatusChangePermissions(booking, userId, bookerId, itemOwnerId, newStatus);
-        validateStatusTransition(currentStatus, newStatus);
+        if (!booking.getStatus().equals(BookingStatus.WAITING)) {
+            throw new IllegalArgumentException(
+                    String.format("Можно подтверждать/отклонять только бронирования со статусом WAITING, текущий статус: %s",
+                            booking.getStatus().name()));
+        }
 
+        BookingStatus newStatus = approved ? BookingStatus.APPROVED : BookingStatus.REJECTED;
         booking.setStatus(newStatus);
-        return bookingMapper.toSendDto(bookingRepository.save(booking));
+
+        return toSendDto(bookingRepository.save(booking));
     }
+
+    @Override
+    public BookingSendDto getByIdForBookerOrOwner(Long bookingId, Long userId) {
+        Booking booking = findByIdOrThrowInternal(bookingId);
+        Long bookerId = booking.getBooker().getId();
+
+        if (!Objects.equals(userId, bookerId)) {
+            Long ownerId = booking.getItem().getOwner().getId();
+            if (!Objects.equals(userId, ownerId)) {
+                throw new SecurityException(String.format("Пользователь Id: %d пытается получить бронь пользователя Id: %d",
+                        userId, bookerId));
+            }
+        }
+        return toSendDto(booking);
+    }
+
+    @Override
+    public Collection<BookingSendDto> getBookingsByState(Long userId, String state) {
+        userService.getByIdOrThrowInternal(userId);
+        BookingState bookingState = parseBookingState(state);
+
+        List<Booking> bookings = findBookingsByStateAndUser(userId, bookingState, false);;
+        sortBookingsDescending(bookings);
+
+        return toListSendDto(bookings);
+    }
+
+    @Override
+    public Collection<BookingSendDto> getBookingsByOwnerState(Long ownerId, String state) {
+        userService.getByIdOrThrowInternal(ownerId);
+        BookingState bookingState = parseBookingState(state);
+
+        List<Booking> bookings = findBookingsByStateAndUser(ownerId, bookingState, true);
+        sortBookingsDescending(bookings);
+
+        return toListSendDto(bookings);
+    }
+
+    private void sortBookingsDescending(List<Booking> bookings) {
+        bookings.sort((b1, b2) -> b2.getStart().compareTo(b1.getStart()));
+    }
+
+    private BookingState parseBookingState(String state) {
+        try {
+            return BookingState.valueOf(state.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    ("Недопустимое значение state: " + state +
+                            ". Допустимые значения: ALL, CURRENT, PAST, FUTURE, WAITING, REJECTED"));
+        }
+    }
+
+    private List<Booking> findBookingsByStateAndUser(Long userId, BookingState state, boolean forOwner) {
+        LocalDateTime now = LocalDateTime.now();
+
+        switch (state) {
+            case ALL:
+                return forOwner
+                        ? bookingRepository.findAllByItemOwnerId(userId)
+                        : bookingRepository.findAllByBookerId(userId);
+            case CURRENT:
+                return forOwner
+                        ? bookingRepository.findCurrentBookingsForOwner(userId, now)
+                        : bookingRepository.findCurrentBookings(userId, now);
+            case PAST:
+                return forOwner
+                        ? bookingRepository.findPastBookingsForOwner(userId, now)
+                        : bookingRepository.findPastBookings(userId, now);
+            case FUTURE:
+                return forOwner
+                        ? bookingRepository.findFutureBookingsForOwner(userId, now)
+                        : bookingRepository.findFutureBookings(userId, now);
+            case WAITING:
+            case REJECTED:
+                BookingStatus status = state == BookingState.WAITING
+                        ? BookingStatus.WAITING
+                        : BookingStatus.REJECTED;
+                return forOwner
+                        ? bookingRepository.findByItemOwnerIdAndStatus(userId, status)
+                        : bookingRepository.findByBookerIdAndStatus(userId, status);
+            default:
+                throw new IllegalArgumentException("Неподдерживаемое состояние: " + state);
+        }
+    }
+
 
     @Override
     public Booking findByIdOrThrowInternal(Long id) {
         return bookingRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("бронь с Id: "+id+ " не существует"));
+                .orElseThrow(() -> new NoSuchElementException("Бронь с Id: " + id + " не существует"));
     }
 
-    @Override
-    public void deleteBooking(Long bookingId, Long bookerId) {
-
+    private BookingSendDto toSendDto(Booking booking) {
+        BookingSendDto dto = bookingMapper.toSendDto(booking);
+        dto.setBooker(userMapper.toSendDto(booking.getBooker()));
+        dto.setItem(itemMapper.toSendDto(booking.getItem()));
+        return dto;
     }
 
-    @Override
-    public BookingSendDto getBooking(Long bookingId, Long userId) {
-        return null;
-    }
-
-    @Override
-    public Collection<BookingSendDto> getCreatedBookings(Long userId) {
-        return List.of();
-    }
-
-    @Override
-    public Collection<Booking> getItemBookingsInternal(Long itemId) {
-        return List.of();
-    }
-
-    @Override
-    public Collection<BookingSendDto> getItemBookingsExternal(Long itemId) {
-        return List.of();
+    private List<BookingSendDto> toListSendDto(Collection<Booking> bookings) {
+        return bookings.stream()
+                .map(this::toSendDto)
+                .toList();
     }
 }

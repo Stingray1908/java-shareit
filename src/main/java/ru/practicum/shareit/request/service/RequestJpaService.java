@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.InternalException;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.dto.BookingSendDto;
 import ru.practicum.shareit.common.enums.RequestStatus;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.request.RequestMapper;
@@ -13,11 +15,13 @@ import ru.practicum.shareit.request.dto.ItemRequestSendDTO;
 import ru.practicum.shareit.request.repository.RequestJpaRepository;
 import ru.practicum.shareit.request.repository.RequestRepository;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.service.UserJPAService;
 import ru.practicum.shareit.user.service.UserService;
 
 import javax.sql.rowset.serial.SerialException;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -30,6 +34,7 @@ public class RequestJpaService implements RequestService{
     private final RequestJpaRepository requestJpaRepo;
     private final UserService userJPAService;
     private final RequestMapper requestMapper;
+    private final UserMapper userMapper = new UserMapper();
 
     @Override
     public ItemRequestSendDTO create(ItemRequestReqDTO requestDto, Long requestorId) {
@@ -44,7 +49,7 @@ public class RequestJpaService implements RequestService{
         log.debug("Запрос успешно сохранён в репозитории с ID: {}, пользователь ID: {}",
                 savedRequest.getId(), requestorId);
 
-        return requestMapper.toSendDto(savedRequest);
+        return toSendDto(request);
     }
 
     @Override
@@ -61,11 +66,7 @@ public class RequestJpaService implements RequestService{
         }
 
         existingRequest.setStatus(newStatus);
-        ItemRequest updatedRequest = requestJpaRepo.save(existingRequest);
-
-        ItemRequestSendDTO result = requestMapper.toSendDto(updatedRequest);
-        log.info("Статус запроса ID: {} успешно обновлён. Ответ клиенту: {}", requestId, result);
-        return result;
+        return toSendDto(requestJpaRepo.save(existingRequest));
     }
 
     // внутренний метод, может устанавливать системные статусы Pending Responded
@@ -82,30 +83,27 @@ public class RequestJpaService implements RequestService{
     public ItemRequest findActiveRequestByIdOrThrowInternal(Long id) {
         return requestJpaRepo.findByIdWithActiveStatus(id)
                 .orElseThrow(() -> new NoSuchElementException(
-                        "Запрос с id: " + id + " не существует или имеет неактивный статус"));
+                        "Запрос с id: " + id + " не существует или имеет неактивный статус")
+                );
     }
 
     @Override
     public ItemRequest findRequestByIdOrThrowInternal(Long id) {
         return requestJpaRepo.findById(id)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Запрос с id: " + id + " не существует"));
+                .orElseThrow(() -> new NoSuchElementException("Запрос с id: " + id + " не существует"));
     }
 
     // метод доступен всем
     @Override  // написать тест
     public ItemRequestSendDTO getById(Long id) {
-        return requestMapper.toSendDto(
-                requestJpaRepo.findById(id)
+        return toSendDto(requestJpaRepo.findById(id)
                         .orElseThrow(() -> new NoSuchElementException("Запрос с id: " + id + " не существует"))
         );
     }
 
     @Override // написать тест
     public List<ItemRequestSendDTO> getAllByRequestorId(Long requestorId) {
-        return requestJpaRepo.findAllByRequesterId(requestorId).stream()
-                .map(requestMapper::toSendDto)
-                .toList();
+        return toListSendDto(requestJpaRepo.findAllByRequesterId(requestorId));
     }
 
     // написать тест
@@ -137,5 +135,17 @@ public class RequestJpaService implements RequestService{
                     requestId, actualRequesterId);
             throw new SecurityException(message);
         }
+    }
+
+    private ItemRequestSendDTO toSendDto(ItemRequest request){
+        ItemRequestSendDTO dto = requestMapper.toSendDto(request);
+        dto.setRequester(userMapper.toSendDto(request.getRequester()));
+        return dto;
+    }
+
+    private List<ItemRequestSendDTO> toListSendDto (Collection<ItemRequest> requests) {
+        return requests.stream()
+                .map(this::toSendDto)
+                .toList();
     }
 }

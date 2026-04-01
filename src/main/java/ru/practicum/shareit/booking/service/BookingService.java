@@ -18,8 +18,7 @@ public interface BookingService {
     /**
      * Создаёт новое бронирование предмета.
      *
-     * @param reqDto DTO с данными бронирования (itemId, bookerId, start, end)
-     * @return DTO с данными созданного бронирования со статусом WAITING
+
      * @throws NoSuchElementException   если пользователь или предмет не найдены
      * @throws IllegalArgumentException если:
      *                                  - владелец пытается забронировать свою вещь;
@@ -28,32 +27,21 @@ public interface BookingService {
      *                                  - есть активная бронь от этого пользователя на эту вещь;
      *                                  - новое бронирование пересекается по времени с существующими
      */
-    BookingSendDto create(BookingReqDto reqDto);
+    BookingSendDto create(BookingReqDto dto, Long bookerId);
+
 
     /**
-     * Обновляет статус существующего бронирования.
+     * Подтверждает или отклоняет запрос на бронирование. Может быть выполнено только владельцем вещи.
      *
-     * @param reqDto DTO с ID бронирования и новым статусом
-     * @param userId идентификатор пользователя, запрашивающего изменение (booker или owner)
+     * @param bookingId ID бронирования
+     * @param approved true для статуса APPROVED, false для REJECTED
+     * @param userId идентификатор владельца вещи
      * @return DTO с данными обновлённого бронирования
-     * @throws NoSuchElementException   если бронирование с указанным ID не найдено
-     * @throws IllegalArgumentException если:
-     *                                  - бронирование уже завершено (REJECTED, CANCELED, COMPLETED);
-     *                                  - booker пытается установить статус, отличный от CANCELED;
-     *                                  - owner нарушает правила изменения статуса
-     * @throws SecurityException        если пользователь не имеет доступа к бронированию
+     * @throws NoSuchElementException если бронирование с указанным ID не найдено
+     * @throws SecurityException если пользователь не является владельцем вещи
+     * @throws IllegalArgumentException если статус бронирования не WAITING
      */
-    BookingSendDto patchBooking(BookingReqDto reqDto, Long userId);
-
-    /**
-     * Удаляет бронирование.
-     *
-     * @param bookingId идентификатор бронирования для удаления
-     * @param bookerId  идентификатор пользователя — создателя бронирования
-     * @throws NoSuchElementException   если бронирование не найдено
-     * @throws IllegalArgumentException если пользователь не является booker данного бронирования
-     */
-    void deleteBooking(Long bookingId, Long bookerId);
+    BookingSendDto approveOrRejectBooking(Long bookingId, boolean approved, Long userId);
 
     /**
      * Получает данные бронирования по его идентификатору.
@@ -64,34 +52,23 @@ public interface BookingService {
      * @throws NoSuchElementException если бронирование не найдено или пользователь не имеет доступа
      * @throws SecurityException      если пользователь не является ни booker, ни owner предмета
      */
-    BookingSendDto getBooking(Long bookingId, Long userId);
+    BookingSendDto getByIdForBookerOrOwner(Long bookingId, Long userId);
+
+    Collection<BookingSendDto> getBookingsByOwnerState(Long ownerId, String state);
 
     /**
-     * Возвращает список всех бронирований, созданных указанным пользователем.
+     * Возвращает список бронирований пользователя с фильтрацией по состоянию.
      *
-     * @param userId идентификатор пользователя — booker
-     * @return коллекция DTO с бронированиями пользователя
-     * @throws NoSuchElementException если пользователь с указанным ID не найден
+     * @param userId идентификатор пользователя
+     * @param state строка состояния (ALL, CURRENT, PAST, FUTURE, WAITING, REJECTED)
+     * @return коллекция DTO с бронированиями
+     * @throws NoSuchElementException если пользователь не найден
+     * @throws IllegalArgumentException если state имеет недопустимое значение
      */
-    Collection<BookingSendDto> getCreatedBookings(Long userId);
+    Collection<BookingSendDto> getBookingsByState(Long userId, String state);
 
-    /**
-     * Получает коллекцию сущностей бронирований для указанного предмета (внутренний метод).
-     * Используется для проверки пересечений бронирований и валидации.
-     *
-     * @param itemId идентификатор предмета
-     * @return коллекция сущностей бронирований предмета
-     * @throws NoSuchElementException если предмет с указанным ID не найден
-     */
-    Collection<Booking> getItemBookingsInternal(Long itemId);
 
-    /**
-     * Получает коллекцию DTO бронирований для указанного предмета (внешний метод).
-     *
-     * @param itemId идентификатор предмета
-     * @return коллекция DTO с бронированиями предмета
-     */
-    Collection<BookingSendDto> getItemBookingsExternal(Long itemId);
 
     Booking findByIdOrThrowInternal(Long id);
+
 }
