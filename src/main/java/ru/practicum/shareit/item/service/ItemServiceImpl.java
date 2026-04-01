@@ -120,7 +120,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public Collection<ItemSendDTO> getItemsByRequestOwnerAndRequestIds(Long requestId, Long requestOwnerId) {
+    public Collection<ItemSendDTO> findItemsByRequestIdForRequestOwner(Long requestId, Long requestOwnerId) {
         validateUserExists(requestOwnerId);
         validateRequestOwnership(requestOwnerId, requestId);
 
@@ -170,7 +170,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private void validateRequestOwnership(Long requestOwnerId, Long requestId) {
-        ItemRequest request = requestService.getByIdForInternal(requestId);
+        ItemRequest request = requestService.findActiveRequestByIdOrThrowInternal(requestId);
 
         if (!Objects.equals(request.getRequester(), requestOwnerId)) {
             throw new SecurityException(

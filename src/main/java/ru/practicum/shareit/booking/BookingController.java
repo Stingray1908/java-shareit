@@ -1,4 +1,4 @@
-package ru.practicum.shareit.booking;
+/*package ru.practicum.shareit.booking;
 
 import jakarta.validation.constraints.Positive;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +34,7 @@ import java.util.Collection;
  * - нельзя изменить статус для {@code REJECTED}, {@code CANCELED}, {@code COMPLETED}.
  * - Доступ к просмотру брони имеют только {@code Booker} или {@code Owner}.
  */
-@Slf4j
+/*@Slf4j
 @Validated
 @RestController
 @RequestMapping("/bookings")
@@ -51,7 +51,7 @@ public class BookingController {
      * Устанавливает статус WAITING. Проверяет доступность вещи, корректность дат и права пользователя.
      * ID пользователя передаётся в заголовке X-Booker-User-Id.
      */
-    @PostMapping
+    /*@PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public BookingSendDto addBooking(@RequestBody
                                      @Validated(OnCreate.class) BookingReqDto bookingReqDto,
@@ -66,7 +66,7 @@ public class BookingController {
      * Booker может установить только CANCELED. Owner — APPROVED, REJECTED или COMPLETED.
      * Проверяет права доступа и ограничения по статусам (например, после APPROVED возможен только COMPLETED).
      */
-    @PatchMapping("/{id}")
+   /* @PatchMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public BookingSendDto patchBooking(@RequestBody @Validated(OnUpdate.class) BookingReqDto bookingReqDto,
 
@@ -82,7 +82,7 @@ public class BookingController {
      * Возвращает информацию о конкретном бронировании.
      * Доступ разрешён только Booker (создателю брони) или Owner (владельцу вещи).
      */
-    @GetMapping("/{bookingId}")
+/*    @GetMapping("/{bookingId}")
     @ResponseStatus(HttpStatus.OK)
     public BookingSendDto getBooking(@Positive(message = "ID пользователя должен быть положительным числом")
                                      @PathVariable Long bookingId,
@@ -96,7 +96,7 @@ public class BookingController {
      * Возвращает список всех бронирований для указанной вещи.
      * Метод общедоступный — не требует специальных прав доступа.
      */
-    @GetMapping("/items/{itemId}")
+   /* @GetMapping("/items/{itemId}")
     @ResponseStatus(HttpStatus.OK)
     public Collection<BookingSendDto> getBooking(@Positive(message = "ID вещи должен быть положительным числом")
                                                  @PathVariable Long itemId) {
@@ -107,7 +107,7 @@ public class BookingController {
      * Возвращает все бронирования, созданные указанным пользователем.
      * Если бронирований нет, возвращает пустой массив. Проверяет существование пользователя.
      */
-    @GetMapping
+  /*  @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public Collection<BookingSendDto> getCreatedBookings(@Positive(message = "ID пользователя должен быть положительным числом")
                                                          @RequestHeader(HttpHeader.X_USER_ID) Long id) {
@@ -118,7 +118,7 @@ public class BookingController {
      * Удаляет существующее бронирование.
      * Доступно только для Booker — создателя брони. Проверяет существование бронирования.
      */
-    @DeleteMapping("/{bookingId}")
+   /* @DeleteMapping("/{bookingId}")
     @ResponseStatus(HttpStatus.OK)
     public void deleteBooking(@Positive(message = "ID пользователя должен быть положительным числом")
                               @PathVariable Long bookingId,
@@ -129,3 +129,4 @@ public class BookingController {
     }
 
 }
+*/

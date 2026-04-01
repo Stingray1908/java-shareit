@@ -2,6 +2,7 @@ package ru.practicum.shareit.request.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.InternalException;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 import ru.practicum.shareit.common.enums.RequestStatus;
@@ -28,7 +29,7 @@ public class RequestJpaService implements RequestService{
 
     private final RequestJpaRepository requestJpaRepo;
     private final UserService userJPAService;
-    private final RequestMapper requestMapper = new RequestMapper();
+    private final RequestMapper requestMapper;
 
     @Override
     public ItemRequestSendDTO create(ItemRequestReqDTO requestDto, Long requestorId) {
@@ -70,7 +71,11 @@ public class RequestJpaService implements RequestService{
     // внутренний метод, может устанавливать системные статусы Pending Responded
     @Override
     public ItemRequest patchStatusInternal(ItemRequest request) {
-        return null;
+        RequestStatus newStatus = request.getStatus();
+        if (newStatus.equals(RequestStatus.COMPLETED) || newStatus.equals(RequestStatus.CANCELLED)) {
+            throw new InternalException("Система пытается установить статус запроса" + newStatus.name());
+        }
+        return requestJpaRepo.save(request);
     }
 
     @Override
@@ -78,6 +83,13 @@ public class RequestJpaService implements RequestService{
         return requestJpaRepo.findByIdWithActiveStatus(id)
                 .orElseThrow(() -> new NoSuchElementException(
                         "Запрос с id: " + id + " не существует или имеет неактивный статус"));
+    }
+
+    @Override
+    public ItemRequest findRequestByIdOrThrowInternal(Long id) {
+        return requestJpaRepo.findById(id)
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Запрос с id: " + id + " не существует"));
     }
 
     // метод доступен всем
@@ -108,7 +120,7 @@ public class RequestJpaService implements RequestService{
 
     private User findUserOrThrow(Long userId) {
         User user;
-        if ((user = userJPAService.getByIdInternal(userId)) == null) {
+        if ((user = userJPAService.getByIdOrThrowInternal(userId)) == null) {
             throw new NoSuchElementException(
                     String.format("При создании запроса пользователь с ID:%s не обнаружен", userId));
         }

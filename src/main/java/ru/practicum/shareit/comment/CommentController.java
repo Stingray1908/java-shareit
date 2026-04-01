@@ -1,4 +1,4 @@
-package ru.practicum.shareit.comment;
+/*package ru.practicum.shareit.comment;
 
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
@@ -43,9 +43,9 @@ import java.util.Collection;
  * - ID отзыва (commentId) должен быть положительным числом.
  * - Текст отзыва не может быть пустым и не должен превышать 1000 символов.
  */
-@Slf4j
+/*@Slf4j
 @Validated
-@RestController
+//@RestController
 @RequestMapping("/comments")
 @RequiredArgsConstructor
 public class CommentController {
@@ -60,7 +60,7 @@ public class CommentController {
      * - Пользователь ещё не оставлял отзыв на эту вещь.
      * - Пользователь является арендатором вещи (подтверждено историей бронирований).
      */
-    @PostMapping
+    /*@PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CommentSendDto createComment(
             @Validated
@@ -83,7 +83,7 @@ public class CommentController {
      * - Отзыв существует в системе.
      * - Запрос отправляет автор отзыва (ID пользователя совпадает с автором комментария).
      */
-    @PatchMapping("/{commentId}")
+    /*@PatchMapping("/{commentId}")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public CommentSendDto updateComment(
@@ -107,7 +107,7 @@ public class CommentController {
      * - Отзыв существует в системе.
      * - Запрос отправляет автор отзыва.
      */
-    @DeleteMapping("/{commentId}")
+   /* @DeleteMapping("/{commentId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteComment(
             @Positive(message = "ID отзыва должен быть положительным числом")
@@ -127,7 +127,7 @@ public class CommentController {
      * - Возвращает отзывы в порядке их создания (от старых к новым).
      * - Если отзывов нет, возвращает пустой список.
      */
-    @GetMapping("/item/{itemId}")
+  /*  @GetMapping("/item/{itemId}")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public Collection<CommentSendDto> getCommentsByItem(
@@ -139,3 +139,4 @@ public class CommentController {
         return comments;
     }
 }
+*/

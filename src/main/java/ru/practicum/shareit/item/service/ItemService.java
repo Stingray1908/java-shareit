@@ -54,7 +54,7 @@ public interface ItemService {
      * @return сущность вещи
      * @throws NoSuchElementException если вещь с указанным ID не найдена
      */
-    Item getByIdInternal(Long id);
+    Item getByIdOrThrowInternal(Long id);
 
     /**
      * Возвращает список DTO вещей, принадлежащих указанному пользователю.
@@ -74,17 +74,17 @@ public interface ItemService {
      * @throws NoSuchElementException если запрос с указанным ID не найден
      * @throws SecurityException      если пользователь не является владельцем запроса
      */
-    Collection<ItemSendDTO> getItemsByRequestOwnerAndRequestIds(Long requestId, Long requestOwnerId);
+    Collection<ItemSendDTO> findItemsByRequestIdForRequester(Long requestId, Long requestOwnerId);
 
     /**
      * Удаляет вещь из системы, если она принадлежит указанному пользователю.
      *
-     * @param userId идентификатор пользователя — владельца вещи
+     * @param ownerId идентификатор пользователя — владельца вещи
      * @param itemId идентификатор вещи для удаления
      * @throws NoSuchElementException если пользователь или вещь не найдены
      * @throws SecurityException      если указанный пользователь не является владельцем вещи
      */
-    void deleteByItemAndOwnerIds(long userId, long itemId);
+    void deleteByIdForOwner(long ownerId, long itemId);
 
     /**
      * Осуществляет поиск доступных вещей по подстроке в названии или описании (без учёта регистра).

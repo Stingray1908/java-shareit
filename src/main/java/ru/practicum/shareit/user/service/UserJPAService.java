@@ -44,7 +44,7 @@ public class UserJPAService implements UserService {
         if (name == null && email == null)
             throw new IllegalArgumentException("Не заданы имя и email для обновления пользователя");
 
-        User existingUser = findUserByIdInternalOrThrow(id);
+        User existingUser = getByIdOrThrowInternal(id);
 
         if (name != null) {
             existingUser.setName(name);
@@ -61,13 +61,8 @@ public class UserJPAService implements UserService {
     @Override
     public UserSendDTO getById(Long id) {
         return mapper.toSendDto(
-                findUserByIdInternalOrThrow(id)
+                getByIdOrThrowInternal(id)
         );
-    }
-
-    @Override
-    public User getByIdInternal(Long id) {
-        return findUserByIdInternalOrThrow(id);
     }
 
     @Override
@@ -82,7 +77,7 @@ public class UserJPAService implements UserService {
         jpaRepository.deleteById(id);
     }
 
-    private User findUserByIdInternalOrThrow(Long id) {
+    public User getByIdOrThrowInternal(Long id) {
         return jpaRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Пользователь с id: " + id + " не существует"));
     }

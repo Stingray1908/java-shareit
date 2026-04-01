@@ -133,7 +133,7 @@ public class ItemController {
                                                        @Positive(message = "ID пользователя должен быть положительным числом")
                                                        @RequestHeader(HttpHeader.X_SHARER_USER_ID) long ownerId) {
         log.info("Получён запрос на получение вещей по запросу ID: {}, составителя ID: {}", id, ownerId);
-        Collection<ItemSendDTO> items = itemService.getItemsByRequestOwnerAndRequestIds(id, ownerId);
+        Collection<ItemSendDTO> items = itemService.findItemsByRequestIdForRequester(id, ownerId);
         log.info("Вещи по запросу ID: {} успешно получены. Количество вещей: {}", id, items.size());
         return items;
     }
@@ -152,7 +152,7 @@ public class ItemController {
                                         @Positive(message = "ID вещи должен быть положительным числом")
                                         @PathVariable(name = "itemId") long itemId) {
         log.info("Получён запрос на удаление вещи ID: {} пользователя ID: {}", itemId, userId);
-        itemService.deleteByItemAndOwnerIds(userId, itemId);
+        itemService.deleteByIdForOwner(userId, itemId);
         log.info("Вещь ID: {} пользователя ID: {} успешно удалена", itemId, userId);
     }
 

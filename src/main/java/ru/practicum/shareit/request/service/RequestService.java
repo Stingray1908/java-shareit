@@ -80,4 +80,6 @@ public interface RequestService {
      * @throws NoSuchElementException если запрос с указанным ID не найден
      */
     void deleteById(Long requestId, Long requesterId);
+
+    ItemRequest findRequestByIdOrThrowInternal(Long id);
 }

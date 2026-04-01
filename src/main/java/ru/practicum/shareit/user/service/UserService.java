@@ -38,7 +38,7 @@ public interface UserService {
      */
     UserSendDTO getById(Long id);
 
-    User getByIdInternal(Long id);
+    User getByIdOrThrowInternal(Long id);
 
     /**
      * Возвращает список всех пользователей.

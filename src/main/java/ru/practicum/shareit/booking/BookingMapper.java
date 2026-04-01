@@ -12,39 +12,39 @@ public class BookingMapper implements GenericMapper<Booking, BookingReqDto, Book
     public BookingSendDto toSendDto(Booking booking) {
         if (booking == null) return null;
 
-        return new BookingSendDto(
-                booking.getId(),
-                booking.getBookerId(),
-                booking.getItemId(),
-                booking.getStart(),
-                booking.getEnd(),
-                booking.getStatus()
-        );
+        BookingSendDto dto = new BookingSendDto();
+        dto.setId(booking.getId());
+        dto.setStart(booking.getStart());
+        dto.setEnd(booking.getEnd());
+        dto.setStatus(booking.getStatus());
+        return dto;
+        // поля Booker и Item должны устанавливаться отдельно
     }
 
     @Override
     public BookingReqDto toReqDto(Booking booking) {
         if (booking == null) return null;
 
-        return new BookingReqDto(
-                booking.getId(),
-                booking.getBookerId(),
-                booking.getItemId(),
-                booking.getStart(),
-                booking.getEnd(),
-                booking.getStatus());
+        BookingReqDto dto =  new BookingReqDto();
+        dto.setId(booking.getId());
+        dto.setStart(booking.getStart());
+        dto.setEnd(booking.getEnd());
+        dto.setStatus(booking.getStatus());
+        return dto;
+        // поля BookerId и ItemId должны устанавливаться отдельно
     }
 
     @Override
     public Booking toEntity(BookingReqDto dto) {
         if (dto == null) return null;
 
-        return new Booking(
-                dto.getId(),
-                dto.getBookerId(),
-                dto.getItemId(),
-                dto.getStart(),
-                dto.getEnd(),
-                dto.getStatus());
+        Booking booking = new Booking();
+        booking.setId(dto.getId());
+        booking.setStart(dto.getStart());
+        booking.setEnd(dto.getEnd());
+        booking.setStatus(dto.getStatus());
+        return booking;
+        // поля BookerId и ItemId должны устанавливаться отдельно
+        //
     }
 }

@@ -28,7 +28,7 @@ public interface BookingService {
      *                                  - есть активная бронь от этого пользователя на эту вещь;
      *                                  - новое бронирование пересекается по времени с существующими
      */
-    BookingSendDto addBooking(BookingReqDto reqDto);
+    BookingSendDto create(BookingReqDto reqDto);
 
     /**
      * Обновляет статус существующего бронирования.
@@ -92,4 +92,6 @@ public interface BookingService {
      * @return коллекция DTO с бронированиями предмета
      */
     Collection<BookingSendDto> getItemBookingsExternal(Long itemId);
+
+    Booking findByIdOrThrowInternal(Long id);
 }

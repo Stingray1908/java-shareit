@@ -1,4 +1,4 @@
-package ru.practicum.shareit.booking.repository;
+/*package ru.practicum.shareit.booking.repository;
 
 import com.sun.jdi.InternalException;
 import lombok.extern.slf4j.Slf4j;
@@ -95,3 +95,4 @@ public class InMemoryBookingRepository implements BookingRepository {
         nextId = 1L;
     }
 }
+*/
