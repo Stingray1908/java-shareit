@@ -58,8 +58,10 @@ public class TestServiceConfiguration {
             ItemJPARepository itemRepository,
             ItemMapper itemMapper,
             UserJPAService userJPAService,
-            RequestJpaService requestJpaService) {
-        return new ItemJPAService(itemRepository, itemMapper, userJPAService, requestJpaService);
+            UserMapper userMapper,
+            RequestJpaService requestJpaService
+    ,RequestMapper requestMapper) {
+        return new ItemJPAService(itemRepository, itemMapper, userJPAService, userMapper, requestJpaService, requestMapper);
     }
 
     @Bean

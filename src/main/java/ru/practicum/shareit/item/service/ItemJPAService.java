@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestBody;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingDates;
 import ru.practicum.shareit.common.enums.RequestStatus;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.ItemMapper;
@@ -17,17 +19,23 @@ import ru.practicum.shareit.item.dto.ItemSendDTO;
 import ru.practicum.shareit.item.repository.ItemJPARepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.RequestMapper;
 import ru.practicum.shareit.request.service.RequestJpaService;
 import ru.practicum.shareit.request.service.RequestService;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.service.UserJPAService;
 import ru.practicum.shareit.user.service.UserService;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static java.time.ZoneOffset.UTC;
 
 @Slf4j
 
@@ -39,6 +47,8 @@ public class ItemJPAService implements ItemService{
     private UserService userService;
     private RequestService requestService;
     private ItemMapper itemMapper;
+    private RequestMapper requestMapper;
+    private UserMapper userMapper;
 
     private static final int MAX_DESCRIPTION_LENGTH = 100;
 
@@ -46,11 +56,15 @@ public class ItemJPAService implements ItemService{
             ItemJPARepository itemRepository,
             ItemMapper itemMapper,
             UserService userService,
-            RequestService requestService) {
+            UserMapper userMapper,
+            RequestService requestService,
+            RequestMapper requestMapper) {
         this.itemRepository = itemRepository;
         this.itemMapper = itemMapper;
         this.userService = userService;
+        this.userMapper = userMapper;
         this.requestService = requestService;
+        this.requestMapper = requestMapper;
     }
 
     @Transactional
@@ -74,10 +88,18 @@ public class ItemJPAService implements ItemService{
         }
         item.setOwner(owner);
 
-        Item saved = itemRepository.save(item);
-        log.debug("Создана вещь с ID: {} для запроса с ID: {}", saved.getId(), requestId);
-        return itemMapper.toSendDto(saved);
+        return toSendDTO(itemRepository.save(item));
     }
+
+    private ItemSendDTO toSendDTO(Item item) {
+        ItemSendDTO dto = itemMapper.toSendDto(item);;
+        if (item.getRequest() != null) {
+            dto.setRequest(requestMapper.toSendDto(item.getRequest()));
+        }
+        dto.setOwner(userMapper.toSendDto(item.getOwner()));
+        return dto;
+    }
+
 
     private User findUserOrThrow(Long userId) {
         return userService.getByIdOrThrowInternal(userId);
@@ -124,13 +146,13 @@ public class ItemJPAService implements ItemService{
         checkOwnership(item.getOwner().getId(), ownerId);
         updateItemFields(item, dto);
 
-        return itemMapper.toSendDto(itemRepository.save(item));
+        return toSendDTO(itemRepository.save(item));
     }
 
     //тест
     @Override
     public ItemSendDTO getById(Long id) {
-        return itemMapper.toSendDto(getByIdOrThrowInternal(id));
+        return toSendDTO(getByIdOrThrowInternal(id));
     }
 
     @Override
@@ -140,12 +162,65 @@ public class ItemJPAService implements ItemService{
     }
 
     //test
-    @Override
-    public List<ItemSendDTO> getOwnerItems(long userId) {
-        return itemRepository.findByOwnerId(userId).stream()
-                .map(itemMapper::toSendDto)
+    public List<ItemSendDTO> getOwnerItems(long ownerId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        // Шаг 1: Получаем все вещи владельца
+        List<Item> items = itemRepository.findByOwnerId(ownerId);
+
+        // Если вещей нет, возвращаем пустой список
+        if (items.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Извлекаем ID всех вещей для использования в следующем запросе
+        List<Long> itemIds = items.stream()
+                .map(Item::getId)
                 .toList();
+
+        // Шаг 2: Получаем данные о бронированиях только для этих вещей
+        List<Map<String, Object>> bookingData = itemRepository.findItemBookingTimesByOwnerId(ownerId);
+
+        // Создаём карту: itemId → (last_booking_end, next_booking_start)
+        Map<Long, BookingDates> bookingTimesByItem = bookingData.stream()
+                .collect(Collectors.toMap(
+                        map -> (Long) map.get("item_id"),
+                        map -> new BookingDates(
+                                Optional.ofNullable(map.get("last_booking_end"))
+                                        .filter(Timestamp.class::isInstance)
+                                        .map(Timestamp.class::cast)
+                                        .map(Timestamp::toLocalDateTime)
+                                        .orElse(null),
+                                Optional.ofNullable(map.get("next_booking_start"))
+                                        .filter(Timestamp.class::isInstance)
+                                        .map(Timestamp.class::cast)
+                                        .map(Timestamp::toLocalDateTime)
+                                        .orElse(null)
+                        )));
+
+        // Шаг 3: Обрабатываем каждый предмет
+        return items.stream()
+                .map(item -> {
+                    ItemSendDTO dto = toSendDTO(item);
+                    BookingDates times = bookingTimesByItem.get(item.getId());
+
+                    if (times != null) {
+                        dto.setLastBookingDate(times.lastBooking());
+                        dto.setNextBookingDate(times.nextBooking());
+                    }
+
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
+
+    /*public List<Map<String, Object>> find(Long id){
+        return itemRepository.findBookingsByItemId(id);
+    }*/
+
+
+
+
 
     //тест
     @Override
@@ -154,7 +229,7 @@ public class ItemJPAService implements ItemService{
         checkOwnership(request.getRequester().getId(), requesterId);
 
         return itemRepository.findByRequestId(requestId).stream()
-                .map(itemMapper::toSendDto)
+                .map(this::toSendDTO)
                 .toList();
     }
 
@@ -178,7 +253,7 @@ public class ItemJPAService implements ItemService{
     public List<ItemSendDTO> search(String text) {
         text = text == null ? "" : text.trim().toLowerCase();
         return itemRepository.searchItems(text).stream()
-                .map(itemMapper::toSendDto)
+                .map(this::toSendDTO)
                 .toList();
     }
 }

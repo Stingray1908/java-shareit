@@ -13,6 +13,7 @@ import ru.practicum.shareit.booking.repository.BookingJpaRepository;
 import ru.practicum.shareit.booking.service.BookingJpaService;
 import ru.practicum.shareit.common.enums.BookingStatus;
 import ru.practicum.shareit.item.dto.ItemReqDTO;
+import ru.practicum.shareit.item.dto.ItemSendDTO;
 import ru.practicum.shareit.item.repository.ItemJPARepository;
 import ru.practicum.shareit.item.service.ItemJPAService;
 import ru.practicum.shareit.user.dto.UserReqDTO;
@@ -379,5 +380,4 @@ class BookingJpaRepoServiceTest {
         assertThat(result).hasSize(2);
         result.forEach(booking -> assertThat(booking.getStatus()).isEqualTo(BookingStatus.REJECTED));
     }
-
 }

@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.user.User;
 
+import java.time.LocalDateTime;
+
 @Data
 @EqualsAndHashCode(exclude = {"name", "description", "request", "available"})
 @NoArgsConstructor
