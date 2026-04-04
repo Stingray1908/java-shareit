@@ -1,8 +1,10 @@
 package ru.practicum.shareit.booking.service;
 
-import jakarta.transaction.Transactional;
+
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingMapper;
 import ru.practicum.shareit.booking.dto.BookingReqDto;
@@ -17,6 +19,7 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.service.UserService;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -25,8 +28,10 @@ import java.util.*;
 public class BookingJpaService implements BookingService {
 
     private final BookingJpaRepository bookingRepository;
+
     private final UserService userService;
     private final ItemService itemService;
+
     private final BookingMapper bookingMapper = new BookingMapper();
     private final UserMapper userMapper = new UserMapper();
     private final ItemMapper itemMapper = new ItemMapper();
@@ -34,19 +39,34 @@ public class BookingJpaService implements BookingService {
     @Override
     @Transactional
     public BookingSendDto create(BookingReqDto dto, Long bookerId) {
+        System.out.println(1);
         User booker = userService.getByIdOrThrowInternal(bookerId);
         Item item = itemService.getByIdOrThrowInternal(dto.getItemId());
-
+        System.out.println(2);
         validateBooking(dto, bookerId, item);
 
         Booking booking = bookingMapper.toEntity(dto);
         booking.setBooker(booker);
         booking.setItem(item);
         booking.setStatus(BookingStatus.WAITING);
-
+        System.out.println(3);
         return toSendDto(bookingRepository.save(booking));
     }
 
+    // Вспомогательный метод для тестов — не требует транзакции, так как не сохраняет данные в БД
+    public Booking testCreate(BookingReqDto dto, Long bookerId) {
+        User booker = userService.getByIdOrThrowInternal(bookerId);
+        Item item = itemService.getByIdOrThrowInternal(dto.getItemId());
+
+        Booking booking = bookingMapper.toEntity(dto);
+        booking.setBooker(booker);
+        booking.setItem(item);
+        booking.setStatus(BookingStatus.WAITING);
+
+        return booking;
+    }
+
+    @Transactional(readOnly = true)
     private void validateBooking(BookingReqDto dto, Long bookerId, Item item) {
         if (Objects.equals(item.getOwner().getId(), bookerId))
             throw new IllegalArgumentException("Пользователь не может бронировать свои вещи");
@@ -60,21 +80,23 @@ public class BookingJpaService implements BookingService {
         validateDates(dto.getStart(), dto.getEnd());
     }
 
+    @Transactional(readOnly = true)
     private void validateDates(LocalDateTime start, LocalDateTime end) {
+
         if (start.isAfter(end))
             throw new IllegalArgumentException("Время начала не может быть после времени окончания");
 
         if (start.equals(end))
             throw new IllegalArgumentException("Время начала и окончания брони не может совпадать");
 
-        if (start.isBefore(LocalDateTime.now()))
-            throw new IllegalArgumentException("Время начала должно быть в будущем");
+        /*if (start.isBefore(LocalDateTime.now()))
+            throw new IllegalArgumentException("Время начала должно быть в будущем");*/
     }
 
     @Override
     @Transactional
     public BookingSendDto approveOrRejectBooking(Long bookingId, boolean approved, Long userId) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithAssociations(bookingId)
                 .orElseThrow(() -> new NoSuchElementException("Бронь с Id: " + bookingId + " не найдена"));
 
         Long itemOwnerId = booking.getItem().getOwner().getId();
@@ -96,6 +118,7 @@ public class BookingJpaService implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BookingSendDto getByIdForBookerOrOwner(Long bookingId, Long userId) {
         Booking booking = findByIdOrThrowInternal(bookingId);
         Long bookerId = booking.getBooker().getId();
@@ -111,17 +134,19 @@ public class BookingJpaService implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Collection<BookingSendDto> getBookingsByState(Long userId, String state) {
         userService.getByIdOrThrowInternal(userId);
         BookingState bookingState = parseBookingState(state);
 
-        List<Booking> bookings = findBookingsByStateAndUser(userId, bookingState, false);;
+        List<Booking> bookings = findBookingsByStateAndUser(userId, bookingState, false);
         sortBookingsDescending(bookings);
 
         return toListSendDto(bookings);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Collection<BookingSendDto> getBookingsByOwnerState(Long ownerId, String state) {
         userService.getByIdOrThrowInternal(ownerId);
         BookingState bookingState = parseBookingState(state);
@@ -132,10 +157,12 @@ public class BookingJpaService implements BookingService {
         return toListSendDto(bookings);
     }
 
+    @Transactional(readOnly = true)
     private void sortBookingsDescending(List<Booking> bookings) {
         bookings.sort((b1, b2) -> b2.getStart().compareTo(b1.getStart()));
     }
 
+    @Transactional(readOnly = true)
     private BookingState parseBookingState(String state) {
         try {
             return BookingState.valueOf(state.toUpperCase());
@@ -146,6 +173,7 @@ public class BookingJpaService implements BookingService {
         }
     }
 
+    @Transactional(readOnly = true)
     private List<Booking> findBookingsByStateAndUser(Long userId, BookingState state, boolean forOwner) {
         LocalDateTime now = LocalDateTime.now();
 
@@ -179,13 +207,14 @@ public class BookingJpaService implements BookingService {
         }
     }
 
-
     @Override
+    @Transactional(readOnly = true)
     public Booking findByIdOrThrowInternal(Long id) {
-        return bookingRepository.findById(id)
+        return bookingRepository.findByIdWithAssociations(id)
                 .orElseThrow(() -> new NoSuchElementException("Бронь с Id: " + id + " не существует"));
     }
 
+    @Transactional(readOnly = true)
     private BookingSendDto toSendDto(Booking booking) {
         BookingSendDto dto = bookingMapper.toSendDto(booking);
         dto.setBooker(userMapper.toSendDto(booking.getBooker()));
@@ -193,6 +222,7 @@ public class BookingJpaService implements BookingService {
         return dto;
     }
 
+    @Transactional(readOnly = true)
     private List<BookingSendDto> toListSendDto(Collection<Booking> bookings) {
         return bookings.stream()
                 .map(this::toSendDto)

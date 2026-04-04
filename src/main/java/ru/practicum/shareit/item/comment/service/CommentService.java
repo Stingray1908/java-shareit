@@ -1,7 +1,7 @@
-package ru.practicum.shareit.comment.service;
+package ru.practicum.shareit.item.comment.service;
 
-import ru.practicum.shareit.comment.dto.CommentReqDto;
-import ru.practicum.shareit.comment.dto.CommentSendDto;
+import ru.practicum.shareit.item.comment.dto.CommentReqDto;
+import ru.practicum.shareit.item.comment.dto.CommentSendDto;
 
 import java.util.Collection;
 import java.util.NoSuchElementException;

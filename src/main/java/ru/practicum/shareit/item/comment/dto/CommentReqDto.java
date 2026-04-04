@@ -1,4 +1,4 @@
-package ru.practicum.shareit.comment.dto;
+package ru.practicum.shareit.item.comment.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -10,8 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommentReqDto {
-    @NotBlank(message = "Текст комментария не может быть пустым")
     @Size(max = 1000, message = "Комментарий не может превышать 1000 символов")
-    private String comment;
-    private Boolean isTaskCompleted;
+    private String text;
 }

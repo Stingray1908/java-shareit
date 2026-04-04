@@ -34,8 +34,13 @@ public class BookingController {
     public BookingSendDto addBooking(
             @RequestBody @Validated BookingReqDto bookingReqDto,
             @Positive(message = "ID пользователя должен быть положительным числом")
-            @RequestHeader(HttpHeader.X_BOOKER_USER_ID) Long bookerId) {
-        return service.create(bookingReqDto, bookerId);
+            @RequestHeader(HttpHeader.X_SHARER_USER_ID) Long bookerId) {
+        log.info("Получен запрос на создание бронирования для пользователя с ID: {}, данные бронирования: {}",
+                bookerId, bookingReqDto);
+        BookingSendDto result = service.create(bookingReqDto, bookerId);
+        log.info("Бронирование успешно создано для пользователя с ID: {}, ID бронирования: {}",
+                bookerId, result.getId());
+        return result;
     }
 
     /**
@@ -52,8 +57,14 @@ public class BookingController {
             @PathVariable @Positive(message = "ID брони должен быть положительным числом") Long bookingId,
             @RequestParam boolean approved,
             @Positive(message = "ID пользователя должен быть положительным числом")
-            @RequestHeader(HttpHeader.X_USER_ID) Long userId) {
-        return service.approveOrRejectBooking(bookingId, approved, userId);
+            @RequestHeader(HttpHeader.X_SHARER_USER_ID) Long userId) {
+        String action = approved ? "одобрение" : "отклонение";
+        log.info("Получен запрос на {} бронирования с ID: {} от пользователя с ID: {}",
+                action, bookingId, userId);
+        BookingSendDto result = service.approveOrRejectBooking(bookingId, approved, userId);
+        log.info("Бронирование с ID: {} успешно {} для пользователя с ID: {}",
+                bookingId, action, userId);
+        return result;
     }
 
     /**
@@ -65,8 +76,13 @@ public class BookingController {
     public BookingSendDto getBooking(
             @PathVariable @Positive(message = "ID брони должен быть положительным числом") Long bookingId,
             @Positive(message = "ID пользователя должен быть положительным числом")
-            @RequestHeader(HttpHeader.X_USER_ID) Long userId) {
-        return service.getByIdForBookerOrOwner(bookingId, userId);
+            @RequestHeader(HttpHeader.X_SHARER_USER_ID) Long userId) {
+        log.info("Получен запрос на получение информации о бронировании с ID: {} для пользователя с ID: {}",
+                bookingId, userId);
+        BookingSendDto result = service.getByIdForBookerOrOwner(bookingId, userId);
+        log.info("Информация о бронировании с ID: {} успешно получена для пользователя с ID: {}",
+                bookingId, userId);
+        return result;
     }
 
     /**
@@ -78,9 +94,14 @@ public class BookingController {
     @ResponseStatus(HttpStatus.OK)
     public Collection<BookingSendDto> getBookings(
             @Positive(message = "ID пользователя должен быть положительным числом")
-            @RequestHeader(HttpHeader.X_USER_ID) Long userId,
+            @RequestHeader(HttpHeader.X_SHARER_USER_ID) Long userId,
             @RequestParam(defaultValue = "ALL") String state) {
-        return service.getBookingsByState(userId, state);
+        log.info("Получен запрос на получение бронирований для пользователя с ID: {}, состояние: {}",
+                userId, state);
+        Collection<BookingSendDto> result = service.getBookingsByState(userId, state);
+        log.info("Найдено {} бронирований для пользователя с ID: {}, состояние: {}",
+                result.size(), userId, state);
+        return result;
     }
 
     /**
@@ -91,8 +112,13 @@ public class BookingController {
     @ResponseStatus(HttpStatus.OK)
     public Collection<BookingSendDto> getOwnerBookings(
             @Positive(message = "ID пользователя должен быть положительным числом")
-            @RequestHeader(HttpHeader.X_USER_ID) Long ownerId,
+            @RequestHeader(HttpHeader.X_SHARER_USER_ID) Long ownerId,
             @RequestParam(defaultValue = "ALL") String state) {
-        return service.getBookingsByOwnerState(ownerId, state);
+        log.info("Получен запрос на получение бронирований вещей для владельца с ID: {}, состояние: {}",
+                ownerId, state);
+        Collection<BookingSendDto> result = service.getBookingsByOwnerState(ownerId, state);
+        log.info("Найдено {} бронирований вещей для владельца с ID: {}, состояние: {}",
+                result.size(), ownerId, state);
+        return result;
     }
 }

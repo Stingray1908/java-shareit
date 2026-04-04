@@ -1,41 +1,34 @@
 package ru.practicum.shareit.item.service;
 
 
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestBody;
-import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingDates;
+import ru.practicum.shareit.booking.repository.BookingJpaRepository;
+import ru.practicum.shareit.item.comment.CommentMapper;
 import ru.practicum.shareit.common.enums.RequestStatus;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.ItemMapper;
+import ru.practicum.shareit.item.comment.Comment;
+import ru.practicum.shareit.item.comment.CommentRepository;
+import ru.practicum.shareit.item.comment.dto.CommentReqDto;
+import ru.practicum.shareit.item.comment.dto.CommentSendDto;
 import ru.practicum.shareit.item.dto.ItemReqDTO;
 import ru.practicum.shareit.item.dto.ItemSendDTO;
 import ru.practicum.shareit.item.repository.ItemJPARepository;
-import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.request.RequestMapper;
 import ru.practicum.shareit.request.service.RequestJpaService;
-import ru.practicum.shareit.request.service.RequestService;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.service.UserJPAService;
-import ru.practicum.shareit.user.service.UserService;
 
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static java.time.ZoneOffset.UTC;
 
 @Slf4j
 
@@ -43,29 +36,19 @@ import static java.time.ZoneOffset.UTC;
 @Service("ItemJPAService")
 public class ItemJPAService implements ItemService{
 
-    private ItemJPARepository itemRepository;
-    private UserService userService;
-    private RequestService requestService;
-    private ItemMapper itemMapper;
-    private RequestMapper requestMapper;
-    private UserMapper userMapper;
+    private final ItemJPARepository itemRepository;
+    private final UserJPAService userService;
+    private final RequestJpaService requestService;
+
+    private final ItemMapper itemMapper;
+    private final RequestMapper requestMapper;
+    private final UserMapper userMapper;
+    private final CommentMapper commentMapper;
+
+    private final CommentRepository commentRepository;
+    private final BookingJpaRepository bookingRepository;
 
     private static final int MAX_DESCRIPTION_LENGTH = 100;
-
-    public ItemJPAService(
-            ItemJPARepository itemRepository,
-            ItemMapper itemMapper,
-            UserService userService,
-            UserMapper userMapper,
-            RequestService requestService,
-            RequestMapper requestMapper) {
-        this.itemRepository = itemRepository;
-        this.itemMapper = itemMapper;
-        this.userService = userService;
-        this.userMapper = userMapper;
-        this.requestService = requestService;
-        this.requestMapper = requestMapper;
-    }
 
     @Transactional
     @Override
@@ -91,10 +74,62 @@ public class ItemJPAService implements ItemService{
         return toSendDTO(itemRepository.save(item));
     }
 
+    @Override
+    @Transactional
+    public CommentSendDto addComment(Long userId, Long itemId, CommentReqDto dto) {
+        User booker = userService.getByIdOrThrowInternal(userId);
+        Item item = getByIdOrThrowInternal(itemId);
+        System.out.println("текст" + dto);
+        // Проверка: пользователь действительно брал вещь в аренду
+        if (!hasUserBookedItem(userId, itemId)) {
+            throw new IllegalArgumentException("Пользователь не брал эту вещь в аренду, поэтому не может оставить отзыв");
+        }
+        System.out.println("текст" + dto);
+        // Создаём новый комментарий
+        Comment comment = new Comment();
+        comment.setBooker(booker);
+        comment.setItem(item);
+        comment.setText(dto.getText());
+        LocalDateTime now = LocalDateTime.now();
+        comment.setCreatedAt(now);
+        comment.setUpdatedAt(now);
+
+        // Сохраняем в БД
+        Comment savedComment = commentRepository.save(comment);
+
+        // Добавляем комментарий в коллекцию вещей для автоматической загрузки
+        item.getComments().add(savedComment);
+
+        return commentMapper.toSendDto(savedComment);
+    }
+
+    /**
+     * Проверяет, брал ли пользователь вещь в аренду (хотя бы одно завершённое бронирование в прошлом)
+     */
+    @Transactional(readOnly = true)
+    private boolean hasUserBookedItem(Long userId, Long itemId) {
+        LocalDateTime now = LocalDateTime.now();
+        List<String> validStatuses = List.of("APPROVED", "COMPLETED");
+
+        return bookingRepository.existsPastBooking(
+                userId,
+                itemId,
+                validStatuses,
+                now
+        );
+    }
+
+    @Transactional(readOnly = true)
     private ItemSendDTO toSendDTO(Item item) {
         ItemSendDTO dto = itemMapper.toSendDto(item);;
         if (item.getRequest() != null) {
             dto.setRequest(requestMapper.toSendDto(item.getRequest()));
+        }
+
+        if (item.getComments() != null && !item.getComments().isEmpty()) {
+            dto.setComments(item.getComments().stream()
+                    .map(c -> commentMapper.toSendDto(c))
+                    .collect(Collectors.toList()));
         }
         dto.setOwner(userMapper.toSendDto(item.getOwner()));
         return dto;
@@ -111,6 +146,7 @@ public class ItemJPAService implements ItemService{
         }
     }
 
+    @Transactional
     private void updateItemFields(Item existingItem, ItemReqDTO dto) {
         boolean hasUpdates = false;
 
@@ -133,13 +169,14 @@ public class ItemJPAService implements ItemService{
         }
     }
 
+    @Transactional(readOnly = true)
     private void validateDescription(String description) {
         if (description != null && description.trim().length() > MAX_DESCRIPTION_LENGTH) {
             throw new IllegalArgumentException("DESCRIPTION_LENGTH_ERROR");
         }
     }
 
-    //тест
+    @Transactional
     @Override
     public ItemSendDTO update(Long itemId, Long ownerId, ItemReqDTO dto) {
         Item item = getByIdOrThrowInternal(itemId);
@@ -149,19 +186,23 @@ public class ItemJPAService implements ItemService{
         return toSendDTO(itemRepository.save(item));
     }
 
-    //тест
+    @Transactional(readOnly = true)
     @Override
     public ItemSendDTO getById(Long id) {
         return toSendDTO(getByIdOrThrowInternal(id));
     }
 
+    @Transactional(readOnly = true)
     @Override
     public Item getByIdOrThrowInternal(Long id) {
-        return itemRepository.findById(id)
+        System.out.println("++++++++++++++++++++++++++item+++++++++++++++++++++++++++++++");
+        Item item = itemRepository.findById(id)
                 .orElseThrow(()-> new NoSuchElementException("Вещь с ID:"+id+ " не существует"));
+        System.out.println("=-=-=-=-===-=-=-=-=-==-=-=");
+        return item;
     }
 
-    //test
+    @Transactional(readOnly = true)
     public List<ItemSendDTO> getOwnerItems(long ownerId) {
         LocalDateTime now = LocalDateTime.now();
 
@@ -205,8 +246,8 @@ public class ItemJPAService implements ItemService{
                     BookingDates times = bookingTimesByItem.get(item.getId());
 
                     if (times != null) {
-                        dto.setLastBookingDate(times.lastBooking());
-                        dto.setNextBookingDate(times.nextBooking());
+                        dto.setLastBooking(times.lastBooking());
+                        dto.setNextBooking(times.nextBooking());
                     }
 
                     return dto;
@@ -222,7 +263,7 @@ public class ItemJPAService implements ItemService{
 
 
 
-    //тест
+    @Transactional(readOnly = true)
     @Override
     public Collection<ItemSendDTO> findItemsByRequestIdForRequester(Long requestId, Long requesterId) {
         ItemRequest request = requestService.findRequestByIdOrThrowInternal(requestId);
@@ -233,7 +274,7 @@ public class ItemJPAService implements ItemService{
                 .toList();
     }
 
-    //тест
+    @Transactional
     @Override
     public void deleteByIdForOwner(long ownerId, long itemId) {
         Item item = getByIdOrThrowInternal(itemId);
@@ -241,6 +282,7 @@ public class ItemJPAService implements ItemService{
         itemRepository.deleteById(itemId);
     }
 
+    @Transactional(readOnly = true)
     private void checkOwnership(Long realOwner, Long possibleOwner) {
         if (! Objects.equals(realOwner, possibleOwner)) {
         throw new SecurityException(
@@ -248,13 +290,21 @@ public class ItemJPAService implements ItemService{
     }
     }
 
-    //тест
+    @Transactional(readOnly = true)
     @Override
     public List<ItemSendDTO> search(String text) {
-        text = text == null ? "" : text.trim().toLowerCase();
-        return itemRepository.searchItems(text).stream()
+        String normalizedText = normalizeSearchText(text);
+        if (normalizedText.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return itemRepository.searchItems(normalizedText).stream()
                 .map(this::toSendDTO)
                 .toList();
+    }
+
+    private String normalizeSearchText(String text) {
+        return text == null ? "" : text.trim().toLowerCase();
     }
 }
 

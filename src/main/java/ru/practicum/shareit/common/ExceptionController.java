@@ -22,7 +22,7 @@ public class ExceptionController {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("message", ex.getMessage());
         body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("status", HttpStatus.NOT_FOUND.value());
         body.put("path", ex.getCause());
 
         log.warn(ex.getMessage());

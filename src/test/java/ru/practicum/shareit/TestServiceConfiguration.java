@@ -1,11 +1,13 @@
-package ru.practicum.shareit;
+/*package ru.practicum.shareit;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import ru.practicum.shareit.booking.BookingMapper;
 import ru.practicum.shareit.booking.repository.BookingJpaRepository;
 import ru.practicum.shareit.booking.service.BookingJpaService;
 import ru.practicum.shareit.item.ItemMapper;
+import ru.practicum.shareit.item.comment.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemJPARepository;
 import ru.practicum.shareit.item.service.ItemJPAService;
 import ru.practicum.shareit.item.service.ItemService;
@@ -18,6 +20,7 @@ import ru.practicum.shareit.user.service.UserJPAService;
 import ru.practicum.shareit.user.service.UserService;
 
 @Configuration
+@Profile("test")
 public class TestServiceConfiguration {
 
     @Bean
@@ -45,6 +48,8 @@ public class TestServiceConfiguration {
         return new UserJPAService(userRepository, userMapper);
     }
 
+
+
     @Bean
     public RequestJpaService requestJpaService(
             RequestJpaRepository requestRepository,
@@ -60,8 +65,12 @@ public class TestServiceConfiguration {
             UserJPAService userJPAService,
             UserMapper userMapper,
             RequestJpaService requestJpaService
-    ,RequestMapper requestMapper) {
-        return new ItemJPAService(itemRepository, itemMapper, userJPAService, userMapper, requestJpaService, requestMapper);
+    ,RequestMapper requestMapper,
+            CommentRepository commentRepository,
+            BookingJpaRepository bookingRepository) {
+        return new ItemJPAService(itemRepository, itemMapper, userJPAService, userMapper, requestJpaService, requestMapper,
+                commentRepository,
+                bookingRepository);
     }
 
     @Bean
@@ -70,3 +79,4 @@ public class TestServiceConfiguration {
     }
 
 }
+*/

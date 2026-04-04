@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.InternalException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.dto.BookingSendDto;
@@ -29,14 +30,16 @@ import java.util.Objects;
 @Slf4j
 @Service("RequestJpaService")
 @RequiredArgsConstructor
-public class RequestJpaService implements RequestService{
+public class RequestJpaService implements RequestService {
 
     private final RequestJpaRepository requestJpaRepo;
     private final UserService userJPAService;
+
     private final RequestMapper requestMapper;
     private final UserMapper userMapper = new UserMapper();
 
     @Override
+    @Transactional
     public ItemRequestSendDTO create(ItemRequestReqDTO requestDto, Long requestorId) {
         User user = findUserOrThrow(requestorId);
 
@@ -53,11 +56,11 @@ public class RequestJpaService implements RequestService{
     }
 
     @Override
+    @Transactional
     public ItemRequestSendDTO patchStatus(ItemRequestReqDTO requestDto, Long requestId, Long requestorId) {
-
         ItemRequest existingRequest = findActiveRequestByIdOrThrowInternal(requestId);
 
-        validateRequestAccessOrThrow(existingRequest, requestId);
+        validateRequestAccessOrThrow(existingRequest, requestorId);
         RequestStatus newStatus = requestDto.getStatus();
 
         if (newStatus.equals(RequestStatus.PENDING) || newStatus.equals(RequestStatus.RESPONDED)) {
@@ -71,6 +74,7 @@ public class RequestJpaService implements RequestService{
 
     // внутренний метод, может устанавливать системные статусы Pending Responded
     @Override
+    @Transactional
     public ItemRequest patchStatusInternal(ItemRequest request) {
         RequestStatus newStatus = request.getStatus();
         if (newStatus.equals(RequestStatus.COMPLETED) || newStatus.equals(RequestStatus.CANCELLED)) {
@@ -80,6 +84,7 @@ public class RequestJpaService implements RequestService{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ItemRequest findActiveRequestByIdOrThrowInternal(Long id) {
         return requestJpaRepo.findByIdWithActiveStatus(id)
                 .orElseThrow(() -> new NoSuchElementException(
@@ -88,6 +93,7 @@ public class RequestJpaService implements RequestService{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ItemRequest findRequestByIdOrThrowInternal(Long id) {
         return requestJpaRepo.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Запрос с id: " + id + " не существует"));
@@ -95,27 +101,30 @@ public class RequestJpaService implements RequestService{
 
     // метод доступен всем
     @Override  // написать тест
+    @Transactional(readOnly = true)
     public ItemRequestSendDTO getById(Long id) {
         return toSendDto(requestJpaRepo.findById(id)
-                        .orElseThrow(() -> new NoSuchElementException("Запрос с id: " + id + " не существует"))
+                .orElseThrow(() -> new NoSuchElementException("Запрос с id: " + id + " не существует"))
         );
     }
 
     @Override // написать тест
+    @Transactional(readOnly = true)
     public List<ItemRequestSendDTO> getAllByRequestorId(Long requestorId) {
         return toListSendDto(requestJpaRepo.findAllByRequesterId(requestorId));
     }
 
     // написать тест
-    @Override  // может удалтиь только создатель
+    @Override  // может удалить только создатель
+    @Transactional
     public void deleteById(Long requestId, Long requesterId) {
-
         ItemRequest existingRequest = findActiveRequestByIdOrThrowInternal(requestId);
         validateRequestAccessOrThrow(existingRequest, requesterId);
 
         requestJpaRepo.deleteById(requestId);
     }
 
+    @Transactional(readOnly = true)
     private User findUserOrThrow(Long userId) {
         User user;
         if ((user = userJPAService.getByIdOrThrowInternal(userId)) == null) {
@@ -125,6 +134,7 @@ public class RequestJpaService implements RequestService{
         return user;
     }
 
+    @Transactional(readOnly = true)
     private void validateRequestAccessOrThrow(ItemRequest existingRequest, Long requestId) {
         Long actualRequesterId = existingRequest.getRequester().getId();
 
@@ -137,12 +147,14 @@ public class RequestJpaService implements RequestService{
         }
     }
 
+    @Transactional(readOnly = true)
     private ItemRequestSendDTO toSendDto(ItemRequest request){
         ItemRequestSendDTO dto = requestMapper.toSendDto(request);
         dto.setRequester(userMapper.toSendDto(request.getRequester()));
         return dto;
     }
 
+    @Transactional(readOnly = true)
     private List<ItemRequestSendDTO> toListSendDto (Collection<ItemRequest> requests) {
         return requests.stream()
                 .map(this::toSendDto)

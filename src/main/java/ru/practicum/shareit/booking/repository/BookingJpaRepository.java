@@ -27,6 +27,14 @@ public interface BookingJpaRepository extends JpaRepository<Booking, Long> {
      */
     Optional<Booking> findById(Long id);
 
+
+    @Query("SELECT b FROM Booking b " +
+            "JOIN FETCH b.booker " +
+            "JOIN FETCH b.item " +
+            "LEFT JOIN FETCH b.booker.items " +
+            "WHERE b.id = :id")
+    Optional<Booking> findByIdWithAssociations(@Param("id") Long id);
+
     // === ПРОВЕРКА КОНФЛИКТОВ БРОНИРОВАНИЙ ===
 
     /**
@@ -146,9 +154,25 @@ public interface BookingJpaRepository extends JpaRepository<Booking, Long> {
      */
     @Query("SELECT b FROM Booking b " +
             "WHERE b.item.owner.id = :ownerId " +
-            "AND b.status = :status")
+            "AND b.status = :status " +
+            "AND b.end < CURRENT_TIMESTAMP")
     List<Booking> findByItemOwnerIdAndStatus(
             @Param("ownerId") Long ownerId,
             @Param("status") BookingStatus status
     );
+
+
+    //boolean existsByBookerIdAndItemIdAndStatusIn(Long bookerId, Long itemId, List<String> statuses);
+
+
+    @Query("SELECT COUNT(b) > 0 " +
+            "FROM Booking b " +
+            "WHERE b.booker.id = :bookerId " +
+            "  AND b.item.id = :itemId " +
+            "  AND b.status IN :statuses " +
+            "  AND b.end < :currentDateTime")
+    boolean existsPastBooking(@Param("bookerId") Long bookerId,
+                              @Param("itemId") Long itemId,
+                              @Param("statuses") List<String> statuses,
+                              @Param("currentDateTime") LocalDateTime currentDateTime);
 }

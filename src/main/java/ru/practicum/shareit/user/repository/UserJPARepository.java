@@ -1,6 +1,8 @@
 package ru.practicum.shareit.user.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import ru.practicum.shareit.user.User;
 
@@ -20,4 +22,7 @@ public interface UserJPARepository extends JpaRepository<User, Long> {
     void deleteById(@NonNull Long id);
 
     void deleteAll();
+
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.items WHERE u.id = :id")
+    Optional<User> findUserWithItems(@Param("id") Long id);
 }

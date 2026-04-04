@@ -5,8 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import ru.practicum.shareit.TestServiceConfiguration;
+
 import ru.practicum.shareit.booking.dto.BookingReqDto;
 import ru.practicum.shareit.booking.dto.BookingSendDto;
 import ru.practicum.shareit.booking.repository.BookingJpaRepository;
@@ -28,9 +29,8 @@ import java.util.NoSuchElementException;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@DataJpaTest
+@SpringBootTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(TestServiceConfiguration.class)
 class BookingJpaRepoServiceTest {
 
     @Autowired

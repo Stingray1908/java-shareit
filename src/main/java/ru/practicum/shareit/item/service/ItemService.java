@@ -1,6 +1,9 @@
 package ru.practicum.shareit.item.service;
 
 import ru.practicum.shareit.item.Item;
+import ru.practicum.shareit.item.comment.Comment;
+import ru.practicum.shareit.item.comment.dto.CommentReqDto;
+import ru.practicum.shareit.item.comment.dto.CommentSendDto;
 import ru.practicum.shareit.item.dto.ItemReqDTO;
 import ru.practicum.shareit.item.dto.ItemSendDTO;
 
@@ -23,6 +26,8 @@ public interface ItemService {
      * @throws IllegalArgumentException если описание превышает допустимую длину (100 символов)
      */
     ItemSendDTO create(Long ownerId, ItemReqDTO itemReqDTO);
+
+    CommentSendDto addComment(Long userId, Long itemId, CommentReqDto dto);
 
     /**
      * Обновляет данные существующей вещи.

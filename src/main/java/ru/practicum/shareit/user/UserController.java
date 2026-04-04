@@ -33,13 +33,13 @@ import java.util.Collection;
  */
 @Slf4j
 @Validated
-//@RestController
+@RestController
 @RequestMapping("/users")
 public class UserController {
 
     private final UserService userService;
 
-    public UserController(@Qualifier("JpaService")UserService userService) {
+    public UserController(UserService userService) {
         this.userService = userService;
     }
 
@@ -109,7 +109,7 @@ public class UserController {
     }
 
     /**
-     * Удаляет пользователя по ID.
+     * Удаляет пользователя по ID, все его вещи
      * Если пользователь не найден, выбрасывает NoSuchElementException.
      * Статус ответа — NO_CONTENT (204).
      */

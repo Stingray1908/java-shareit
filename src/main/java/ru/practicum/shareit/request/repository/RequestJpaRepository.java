@@ -15,13 +15,17 @@ public interface RequestJpaRepository extends JpaRepository<ItemRequest, Long> {
     @NonNull
     ItemRequest save(@NonNull ItemRequest request);
 
-    @Query("SELECT r FROM ItemRequest r WHERE r.id = :id AND r.status IN ('PENDING', 'RESPONDED')")
+    // Исправлен: добавлен JOIN FETCH для загрузки User
+    @Query("SELECT r FROM ItemRequest r JOIN FETCH r.requester WHERE r.id = :id AND r.status IN ('PENDING', 'RESPONDED')")
     Optional<ItemRequest> findByIdWithActiveStatus(@Param("id") Long id);
 
-    @NonNull
+    // Исправлен: добавлен JOIN FETCH для загрузки User
+    @Query("SELECT r FROM ItemRequest r JOIN FETCH r.requester WHERE r.id = :id")
     Optional<ItemRequest> findById(@NonNull Long id);
 
-    List<ItemRequest> findAllByRequesterId(Long id);
+    // Исправлен: добавлен JOIN FETCH для загрузки User
+    @Query("SELECT r FROM ItemRequest r JOIN FETCH r.requester WHERE r.requester.id = :requesterId")
+    List<ItemRequest> findAllByRequesterId(@Param("requesterId") Long requesterId);
 
     void deleteById(Long id);
 }

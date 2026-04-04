@@ -90,18 +90,18 @@ public class InMemoryItemRepository implements ItemRepository {
         return true;
     }
 
-    @Override
-    public List<Item> search(String text) {
-        if (text == null || text.trim().isBlank()) {
-            return new ArrayList<>();
-        }
+        @Override
+        public List<Item> search(String text) {
+            if (text == null || text.trim().isBlank()) {
+                return new ArrayList<>();
+            }
 
-        String searchText = text.toLowerCase(Locale.ROOT);
-        return itemIdToItem.values().stream()
-                .filter(i -> i.getAvailable() == true)
-                .filter(i -> matchesSearchCriteria(i, searchText))
-                .toList();
-    }
+            String searchText = text.toLowerCase(Locale.ROOT);
+            return itemIdToItem.values().stream()
+                    .filter(i -> i.getAvailable() == true)
+                    .filter(i -> matchesSearchCriteria(i, searchText))
+                    .toList();
+        }
 
     // Вспомогательный метод для получения вещи или выброса исключения
     private Item getItemOrThrow(long itemId) {

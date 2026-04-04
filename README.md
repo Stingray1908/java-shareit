@@ -1,6 +1,7 @@
 ```markdown
 
 
+$ docker run --name shareit-postgres   -e POSTGRES_DB=shareit_db   -e POSTGRES_USER=sa   -e POSTGRES_PASSWORD=111   -p 5432:5432   -d postgres:15
 
 
 

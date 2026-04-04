@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.service.BookingServiceImpl;
 import ru.practicum.shareit.comment.Comment;
-import ru.practicum.shareit.comment.CommentMapper;
+import ru.practicum.shareit.item.comment.CommentMapper;
 import ru.practicum.shareit.comment.dto.CommentReqDto;
 import ru.practicum.shareit.comment.dto.CommentSendDto;
 import ru.practicum.shareit.comment.repository.CommentRepository;

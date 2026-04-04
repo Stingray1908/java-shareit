@@ -1,14 +1,12 @@
 package ru.practicum.shareit.item.dto;
 
 import lombok.Data;
-import lombok.Value;
-import ru.practicum.shareit.item.Item;
-import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.item.comment.dto.CommentSendDto;
 import ru.practicum.shareit.request.dto.ItemRequestSendDTO;
-import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.dto.UserSendDTO;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class ItemSendDTO {
@@ -18,7 +16,7 @@ public class ItemSendDTO {
     private String description;
     private ItemRequestSendDTO request;
     private Boolean available;
-    private LocalDateTime lastBookingDate;
-    private LocalDateTime nextBookingDate;
+    private LocalDateTime lastBooking;
+    private LocalDateTime nextBooking;
+    private List<CommentSendDto> comments;
 }
-

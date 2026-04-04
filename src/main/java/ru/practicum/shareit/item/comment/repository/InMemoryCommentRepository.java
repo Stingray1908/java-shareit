@@ -1,11 +1,11 @@
-package ru.practicum.shareit.comment.repository;
+/*package ru.practicum.shareit.item.comment.repository;
 
 import org.springframework.stereotype.Repository;
-import ru.practicum.shareit.comment.Comment;
+import ru.practicum.shareit.item.comment.Comment;
 
 import java.util.*;
 
-@Repository("InMemoryCommentRepository")
+@Repository
 public class InMemoryCommentRepository implements CommentRepository {
 
     private final Map<Long, Comment> comments = new HashMap<>(); // <id comment, comment>
@@ -18,7 +18,7 @@ public class InMemoryCommentRepository implements CommentRepository {
         comment.setId(id);
         comments.put(id, comment);
 
-        itemComments.computeIfAbsent(comment.getItemId(), k -> new ArrayList<>())
+        itemComments.computeIfAbsent(comment.getItem().getId(), k -> new ArrayList<>())
                 .add(id);
         return comment;
     }
@@ -32,7 +32,7 @@ public class InMemoryCommentRepository implements CommentRepository {
     public void deleteComment(Long commentId) {
         Comment comment = comments.remove(commentId);
         if (comment != null) {
-            List<Long> commentIds = itemComments.get(comment.getItemId());
+            List<Long> commentIds = itemComments.get(comment.getItem().getId());
             if (commentIds != null) {
                 commentIds.remove(Long.valueOf(commentId)); // Явное указание типа для корректного удаления по значению
             }
@@ -61,11 +61,16 @@ public class InMemoryCommentRepository implements CommentRepository {
 
         for (Long commentId : commentIds) {
             Comment comment = comments.get(commentId);
-            if (comment != null && Objects.equals(comment.getBookerId(), bookerId)) {
+            if (comment != null && Objects.equals(comment.getBooker().getId(), bookerId)) {
                 return true;
             }
         }
         return false;
+    }
+
+    @Override
+    public void deleteAll() {
+
     }
 
     public void clear() {
@@ -74,5 +79,5 @@ public class InMemoryCommentRepository implements CommentRepository {
         nextId = 1L;
     }
 }
-
+*/
 
