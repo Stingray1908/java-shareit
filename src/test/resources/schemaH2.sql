@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS items (
     is_available BOOLEAN NOT NULL,
     CONSTRAINT pk_item PRIMARY KEY (id),
     CONSTRAINT fk_item_request FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE SET NULL,
-    CONSTRAINT fk_item_user FOREIGN KEY (owner_id) REFERENCES users(id)
+    CONSTRAINT fk_item_user FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 

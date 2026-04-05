@@ -1,8 +1,8 @@
 package ru.practicum.shareit.user;
 
 import jakarta.validation.constraints.Positive;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -18,30 +18,38 @@ import java.util.Collection;
  * REST‑контроллер для управления учётными записями пользователей.
  * Предоставляет полный набор API‑методов для выполнения операций CRUD (создание, чтение, обновление, удаление)
  * над сущностями пользователей.
+ *
+ * Основные эндпоинты:
+ * - POST /users — создание нового пользователя (требуется уникальное имя и email);
+ * - PATCH /users/{userId} — частичное обновление данных пользователя (имя и/или email);
+ * - GET /users/{userId} — получение данных конкретного пользователя по ID;
+ * - GET /users — получение списка всех пользователей в системе;
+ * - DELETE /users/{userId} — удаление пользователя по ID.
+ *
  * <p>
  * Основные правила бизнес‑логики:
  * - При создании пользователя обязательно указание имени и email.
  * - Email должен быть уникальным в системе — попытка создать пользователя с существующим email
- * приводит к ошибке ConflictException (409).
+ *   приводит к ошибке ConflictException (409).
  * - Обновление данных пользователя частичное (PATCH): можно изменить имя и/или email.
  * - При обновлении email проверяется его уникальность (не должен совпадать с email других пользователей).
  * - Если при обновлении не указаны ни имя, ни email, выбрасывается IllegalArgumentException (400).
  * - Все операции, требующие ID пользователя, проверяют его существование в системе.
- * Если пользователь не найден, выбрасывается NoSuchElementException (404).
+ *   Если пользователь не найден, выбрасывается NoSuchElementException (404).
  * - ID пользователя должен быть положительным числом во всех запросах, где он используется.
  * - Удаление пользователя возвращает статус NO_CONTENT (204) при успешном выполнении.
+ * <p>
+ * Логирование:
+ * - Каждый запрос логируется с указанием параметров и результата операции.
  */
 @Slf4j
 @Validated
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
     private final UserService userService;
-
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
 
     /**
      * Создаёт нового пользователя.

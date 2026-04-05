@@ -2,7 +2,6 @@ package ru.practicum.shareit.request.dto;
 
 import lombok.Data;
 import ru.practicum.shareit.common.enums.RequestStatus;
-import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.dto.UserSendDTO;
 
 import java.time.LocalDateTime;

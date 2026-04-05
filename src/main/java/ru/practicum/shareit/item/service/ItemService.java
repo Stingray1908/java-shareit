@@ -1,7 +1,6 @@
 package ru.practicum.shareit.item.service;
 
 import ru.practicum.shareit.item.Item;
-import ru.practicum.shareit.item.comment.Comment;
 import ru.practicum.shareit.item.comment.dto.CommentReqDto;
 import ru.practicum.shareit.item.comment.dto.CommentSendDto;
 import ru.practicum.shareit.item.dto.ItemReqDTO;
@@ -85,7 +84,7 @@ public interface ItemService {
      * Удаляет вещь из системы, если она принадлежит указанному пользователю.
      *
      * @param ownerId идентификатор пользователя — владельца вещи
-     * @param itemId идентификатор вещи для удаления
+     * @param itemId  идентификатор вещи для удаления
      * @throws NoSuchElementException если пользователь или вещь не найдены
      * @throws SecurityException      если указанный пользователь не является владельцем вещи
      */

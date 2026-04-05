@@ -3,15 +3,13 @@ package ru.practicum.shareit.user;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import ru.practicum.shareit.common.ConflictException;
 import ru.practicum.shareit.user.dto.UserReqDTO;
 import ru.practicum.shareit.user.dto.UserSendDTO;
-import ru.practicum.shareit.user.repository.UserJPARepository;
-import ru.practicum.shareit.user.service.UserJPAService;
+import ru.practicum.shareit.user.repository.UserJpaRepository;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.util.Collection;
 import java.util.NoSuchElementException;
@@ -21,15 +19,14 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 @SpringBootTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-
+@ActiveProfiles("test")
 class UserJpaRepositoryServiceTest {
 
     @Autowired
-    private UserJPARepository userRepository;
+    private UserJpaRepository userRepository;
 
     @Autowired
-    private UserJPAService userService;
+    private UserService userService;
 
     // Фиксированные тестовые данные
     private static final String TEST_USER_NAME = "Test User";

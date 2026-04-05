@@ -6,8 +6,6 @@ import ru.practicum.shareit.common.enums.RequestStatus;
 import ru.practicum.shareit.user.User;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @Entity

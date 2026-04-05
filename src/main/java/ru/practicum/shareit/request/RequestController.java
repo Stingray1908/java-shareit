@@ -2,6 +2,7 @@ package ru.practicum.shareit.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -31,15 +32,12 @@ import java.util.List;
  */
 @Slf4j
 @Validated
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/requests")
 public class RequestController {
 
     private final RequestService requestService;
-
-    public RequestController(RequestService requestService) {
-        this.requestService = requestService;
-    }
 
     /**
      * Создаёт новый запрос от имени пользователя.

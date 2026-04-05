@@ -1,7 +1,6 @@
 package ru.practicum.shareit.booking.service;
 
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +18,11 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.service.UserService;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
 @RequiredArgsConstructor
 @Service("BookingJpaService")
@@ -39,31 +40,18 @@ public class BookingJpaService implements BookingService {
     @Override
     @Transactional
     public BookingSendDto create(BookingReqDto dto, Long bookerId) {
-        System.out.println(1);
+
         User booker = userService.getByIdOrThrowInternal(bookerId);
         Item item = itemService.getByIdOrThrowInternal(dto.getItemId());
-        System.out.println(2);
+
         validateBooking(dto, bookerId, item);
 
         Booking booking = bookingMapper.toEntity(dto);
         booking.setBooker(booker);
         booking.setItem(item);
         booking.setStatus(BookingStatus.WAITING);
-        System.out.println(3);
+
         return toSendDto(bookingRepository.save(booking));
-    }
-
-    // Вспомогательный метод для тестов — не требует транзакции, так как не сохраняет данные в БД
-    public Booking testCreate(BookingReqDto dto, Long bookerId) {
-        User booker = userService.getByIdOrThrowInternal(bookerId);
-        Item item = itemService.getByIdOrThrowInternal(dto.getItemId());
-
-        Booking booking = bookingMapper.toEntity(dto);
-        booking.setBooker(booker);
-        booking.setItem(item);
-        booking.setStatus(BookingStatus.WAITING);
-
-        return booking;
     }
 
     @Transactional(readOnly = true)

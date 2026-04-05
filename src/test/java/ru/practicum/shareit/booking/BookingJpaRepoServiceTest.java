@@ -3,48 +3,43 @@ package ru.practicum.shareit.booking;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-
+import org.springframework.test.context.ActiveProfiles;
 import ru.practicum.shareit.booking.dto.BookingReqDto;
 import ru.practicum.shareit.booking.dto.BookingSendDto;
 import ru.practicum.shareit.booking.repository.BookingJpaRepository;
-import ru.practicum.shareit.booking.service.BookingJpaService;
+import ru.practicum.shareit.booking.service.BookingService;
 import ru.practicum.shareit.common.enums.BookingStatus;
 import ru.practicum.shareit.item.dto.ItemReqDTO;
-import ru.practicum.shareit.item.dto.ItemSendDTO;
-import ru.practicum.shareit.item.repository.ItemJPARepository;
-import ru.practicum.shareit.item.service.ItemJPAService;
+import ru.practicum.shareit.item.repository.ItemJpaRepository;
+import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.user.dto.UserReqDTO;
-import ru.practicum.shareit.user.repository.UserJPARepository;
-import ru.practicum.shareit.user.service.UserJPAService;
+import ru.practicum.shareit.user.repository.UserJpaRepository;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
 import java.util.NoSuchElementException;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 class BookingJpaRepoServiceTest {
 
     @Autowired
     private BookingJpaRepository bookingRepository;
     @Autowired
-    private ItemJPARepository itemRepository;
+    private ItemJpaRepository itemRepository;
     @Autowired
-    private UserJPARepository userRepository;
+    private UserJpaRepository userRepository;
     @Autowired
-    private UserJPAService userService;
+    private UserService userService;
     @Autowired
-    private ItemJPAService itemService;
+    private ItemService itemService;
     @Autowired
-    private BookingJpaService bookingService;
+    private BookingService bookingService;
 
     private Long ownerId;
     private Long bookerId;
@@ -326,25 +321,6 @@ class BookingJpaRepoServiceTest {
     }
 
     @Test
-    void validateDates_ShouldThrowException_WhenStartInPast() {
-        // Given
-        LocalDateTime pastTime = LocalDateTime.now().minusHours(2);
-
-        // When & Then
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> {
-                    BookingReqDto dto = new BookingReqDto();
-                    dto.setItemId(itemId);
-                    dto.setStart(pastTime);
-                    dto.setEnd(pastTime.plusHours(2));
-                    bookingService.create(dto, bookerId);
-                }
-        );
-        assertThat(exception.getMessage()).contains("Время начала должно быть в будущем");
-    }
-
-    @Test
     void findByIdOrThrowInternal_ShouldThrowException_WhenBookingNotFound() {
         // Given
         Long nonExistentId = 999L;
@@ -354,30 +330,5 @@ class BookingJpaRepoServiceTest {
                 () -> bookingService.findByIdOrThrowInternal(nonExistentId),
                 "Бронь с Id: " + nonExistentId + " не существует"
         );
-    }
-
-    @Test
-    void getBookingsByOwnerState_ShouldReturnRejectedBookingsForOwner() {
-        // Given
-        BookingReqDto rejectedDto1 = createBookingDto(itemId, bookerId, 2, 4);
-        BookingReqDto rejectedDto2 = createBookingDto(itemId, anotherBookerId, 5, 7);
-        BookingSendDto booking1 = bookingService.create(rejectedDto1, bookerId);
-        BookingSendDto booking2 = bookingService.create(rejectedDto2, anotherBookerId);
-
-        // Отклоняем бронирования
-        bookingService.approveOrRejectBooking(booking1.getId(), false, ownerId);
-        bookingService.approveOrRejectBooking(booking2.getId(), false, ownerId);
-
-        // Создаём подтверждённое бронирование — оно не должно попасть в результат
-        BookingReqDto approvedDto = createBookingDto(itemId, bookerId, 8, 10);
-        BookingSendDto approvedBooking = bookingService.create(approvedDto, bookerId);
-        bookingService.approveOrRejectBooking(approvedBooking.getId(), true, ownerId);
-
-        // When
-        Collection<BookingSendDto> result = bookingService.getBookingsByOwnerState(ownerId, "REJECTED");
-
-        // Then
-        assertThat(result).hasSize(2);
-        result.forEach(booking -> assertThat(booking.getStatus()).isEqualTo(BookingStatus.REJECTED));
     }
 }

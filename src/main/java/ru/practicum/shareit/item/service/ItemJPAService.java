@@ -1,43 +1,41 @@
 package ru.practicum.shareit.item.service;
 
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.booking.BookingDates;
 import ru.practicum.shareit.booking.repository.BookingJpaRepository;
-import ru.practicum.shareit.item.comment.CommentMapper;
+import ru.practicum.shareit.common.enums.BookingStatus;
 import ru.practicum.shareit.common.enums.RequestStatus;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.comment.Comment;
-import ru.practicum.shareit.item.comment.CommentRepository;
+import ru.practicum.shareit.item.comment.CommentMapper;
 import ru.practicum.shareit.item.comment.dto.CommentReqDto;
 import ru.practicum.shareit.item.comment.dto.CommentSendDto;
+import ru.practicum.shareit.item.comment.repository.CommentJpaRepository;
 import ru.practicum.shareit.item.dto.ItemReqDTO;
 import ru.practicum.shareit.item.dto.ItemSendDTO;
-import ru.practicum.shareit.item.repository.ItemJPARepository;
+import ru.practicum.shareit.item.repository.ItemJpaRepository;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.request.RequestMapper;
 import ru.practicum.shareit.request.service.RequestJpaService;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserMapper;
-import ru.practicum.shareit.user.service.UserJPAService;
+import ru.practicum.shareit.user.service.UserJpaService;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
-
 @RequiredArgsConstructor
 @Service("ItemJPAService")
-public class ItemJPAService implements ItemService{
+public class ItemJPAService implements ItemService {
 
-    private final ItemJPARepository itemRepository;
-    private final UserJPAService userService;
+    private final ItemJpaRepository itemRepository;
+
+    private final UserJpaService userService;
     private final RequestJpaService requestService;
 
     private final ItemMapper itemMapper;
@@ -45,10 +43,13 @@ public class ItemJPAService implements ItemService{
     private final UserMapper userMapper;
     private final CommentMapper commentMapper;
 
-    private final CommentRepository commentRepository;
+    private final CommentJpaRepository commentRepository;
     private final BookingJpaRepository bookingRepository;
 
     private static final int MAX_DESCRIPTION_LENGTH = 100;
+    private final List<String> validStatuses = List.of(
+            BookingStatus.APPROVED.name(),
+            BookingStatus.COMPLETED.name());
 
     @Transactional
     @Override
@@ -65,7 +66,7 @@ public class ItemJPAService implements ItemService{
             // меняем статус запроса только если текущий "PENDING" (в ожидании)
             if (request.getStatus().equals(RequestStatus.PENDING)) {
                 request.setStatus(RequestStatus.RESPONDED);
-               // тут автоматическое обновление request в БД
+                // тут автоматическое обновление request в БД
             }
             item.setRequest(request);
         }
@@ -79,12 +80,12 @@ public class ItemJPAService implements ItemService{
     public CommentSendDto addComment(Long userId, Long itemId, CommentReqDto dto) {
         User booker = userService.getByIdOrThrowInternal(userId);
         Item item = getByIdOrThrowInternal(itemId);
-        System.out.println("текст" + dto);
+
         // Проверка: пользователь действительно брал вещь в аренду
         if (!hasUserBookedItem(userId, itemId)) {
             throw new IllegalArgumentException("Пользователь не брал эту вещь в аренду, поэтому не может оставить отзыв");
         }
-        System.out.println("текст" + dto);
+
         // Создаём новый комментарий
         Comment comment = new Comment();
         comment.setBooker(booker);
@@ -109,7 +110,6 @@ public class ItemJPAService implements ItemService{
     @Transactional(readOnly = true)
     private boolean hasUserBookedItem(Long userId, Long itemId) {
         LocalDateTime now = LocalDateTime.now();
-        List<String> validStatuses = List.of("APPROVED", "COMPLETED");
 
         return bookingRepository.existsPastBooking(
                 userId,
@@ -119,22 +119,58 @@ public class ItemJPAService implements ItemService{
         );
     }
 
-    @Transactional(readOnly = true)
-    private ItemSendDTO toSendDTO(Item item) {
-        ItemSendDTO dto = itemMapper.toSendDto(item);;
+    /**
+     * Универсальный метод преобразования Item в ItemSendDTO
+     *
+     * @param result      массив объектов из запроса (Item, lastBooking, nextBooking)
+     * @param hasDates    нужно ли устанавливать даты бронирований
+     * @param hasComments нужно ли загружать комментарии
+     */
+    private ItemSendDTO toSendDTO(Object[] result, boolean hasDates, boolean hasComments) {
+        if (result == null || result.length == 0) {
+            throw new IllegalArgumentException("Пустой результат запроса");
+        }
+
+        Item item = (Item) result[0];
+        if (item == null) {
+            throw new NoSuchElementException("Предмет не найден в результате запроса");
+        }
+
+        LocalDateTime lastBooking = null;
+        LocalDateTime nextBooking = null;
+
+        if (hasDates) {
+            lastBooking = result.length > 1 ? (LocalDateTime) result[1] : null;
+            nextBooking = result.length > 2 ? (LocalDateTime) result[2] : null;
+        }
+
+        ItemSendDTO dto = itemMapper.toSendDto(item);
+        dto.setLastBooking(lastBooking);
+        dto.setNextBooking(nextBooking);
+
+        // Комментарии загружаются только если hasComments = true
+        if (hasComments && item.getComments() != null && !item.getComments().isEmpty()) {
+            dto.setComments(item.getComments().stream()
+                    .map(commentMapper::toSendDto)
+                    .collect(Collectors.toList()));
+        } else {
+            dto.setComments(Collections.emptyList());
+        }
+
         if (item.getRequest() != null) {
             dto.setRequest(requestMapper.toSendDto(item.getRequest()));
         }
-
-        if (item.getComments() != null && !item.getComments().isEmpty()) {
-            dto.setComments(item.getComments().stream()
-                    .map(c -> commentMapper.toSendDto(c))
-                    .collect(Collectors.toList()));
-        }
         dto.setOwner(userMapper.toSendDto(item.getOwner()));
+
         return dto;
     }
 
+    // Упрощённая версия для случаев без дат и комментариев
+    @Transactional(readOnly = true)
+    private ItemSendDTO toSendDTO(Item item) {
+        Object[] result = new Object[]{item};
+        return toSendDTO(result, false, false);
+    }
 
     private User findUserOrThrow(Long userId) {
         return userService.getByIdOrThrowInternal(userId);
@@ -169,13 +205,6 @@ public class ItemJPAService implements ItemService{
         }
     }
 
-    @Transactional(readOnly = true)
-    private void validateDescription(String description) {
-        if (description != null && description.trim().length() > MAX_DESCRIPTION_LENGTH) {
-            throw new IllegalArgumentException("DESCRIPTION_LENGTH_ERROR");
-        }
-    }
-
     @Transactional
     @Override
     public ItemSendDTO update(Long itemId, Long ownerId, ItemReqDTO dto) {
@@ -189,79 +218,30 @@ public class ItemJPAService implements ItemService{
     @Transactional(readOnly = true)
     @Override
     public ItemSendDTO getById(Long id) {
-        return toSendDTO(getByIdOrThrowInternal(id));
+        List<Object[]> results = itemRepository.findItemWithBookingDatesAndCommentsById(id, validStatuses);
+        if (results.isEmpty() || results.get(0)[0] == null) {
+            throw new NoSuchElementException("Вещь с ID:" + id + " не существует");
+        }
+        return toSendDTO(results.get(0), false, true); // даты и комментарии
     }
 
     @Transactional(readOnly = true)
     @Override
     public Item getByIdOrThrowInternal(Long id) {
-        System.out.println("++++++++++++++++++++++++++item+++++++++++++++++++++++++++++++");
         Item item = itemRepository.findById(id)
-                .orElseThrow(()-> new NoSuchElementException("Вещь с ID:"+id+ " не существует"));
-        System.out.println("=-=-=-=-===-=-=-=-=-==-=-=");
+                .orElseThrow(() -> new NoSuchElementException("Вещь с ID:" + id + " не существует"));
         return item;
     }
 
     @Transactional(readOnly = true)
+    @Override
     public List<ItemSendDTO> getOwnerItems(long ownerId) {
-        LocalDateTime now = LocalDateTime.now();
+        List<Object[]> results = itemRepository.findItemsWithBookingDatesOnlyByOwnerId(ownerId, validStatuses);
 
-        // Шаг 1: Получаем все вещи владельца
-        List<Item> items = itemRepository.findByOwnerId(ownerId);
-
-        // Если вещей нет, возвращаем пустой список
-        if (items.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        // Извлекаем ID всех вещей для использования в следующем запросе
-        List<Long> itemIds = items.stream()
-                .map(Item::getId)
-                .toList();
-
-        // Шаг 2: Получаем данные о бронированиях только для этих вещей
-        List<Map<String, Object>> bookingData = itemRepository.findItemBookingTimesByOwnerId(ownerId);
-
-        // Создаём карту: itemId → (last_booking_end, next_booking_start)
-        Map<Long, BookingDates> bookingTimesByItem = bookingData.stream()
-                .collect(Collectors.toMap(
-                        map -> (Long) map.get("item_id"),
-                        map -> new BookingDates(
-                                Optional.ofNullable(map.get("last_booking_end"))
-                                        .filter(Timestamp.class::isInstance)
-                                        .map(Timestamp.class::cast)
-                                        .map(Timestamp::toLocalDateTime)
-                                        .orElse(null),
-                                Optional.ofNullable(map.get("next_booking_start"))
-                                        .filter(Timestamp.class::isInstance)
-                                        .map(Timestamp.class::cast)
-                                        .map(Timestamp::toLocalDateTime)
-                                        .orElse(null)
-                        )));
-
-        // Шаг 3: Обрабатываем каждый предмет
-        return items.stream()
-                .map(item -> {
-                    ItemSendDTO dto = toSendDTO(item);
-                    BookingDates times = bookingTimesByItem.get(item.getId());
-
-                    if (times != null) {
-                        dto.setLastBooking(times.lastBooking());
-                        dto.setNextBooking(times.nextBooking());
-                    }
-
-                    return dto;
-                })
+        return results.stream()
+                .map(arr -> toSendDTO(arr, true, false)) // даты есть, комментариев нет
                 .collect(Collectors.toList());
     }
-
-    /*public List<Map<String, Object>> find(Long id){
-        return itemRepository.findBookingsByItemId(id);
-    }*/
-
-
-
-
 
     @Transactional(readOnly = true)
     @Override
@@ -270,7 +250,7 @@ public class ItemJPAService implements ItemService{
         checkOwnership(request.getRequester().getId(), requesterId);
 
         return itemRepository.findByRequestId(requestId).stream()
-                .map(this::toSendDTO)
+                .map(this::toSendDTO) // без дат и комментариев
                 .toList();
     }
 
@@ -284,10 +264,10 @@ public class ItemJPAService implements ItemService{
 
     @Transactional(readOnly = true)
     private void checkOwnership(Long realOwner, Long possibleOwner) {
-        if (! Objects.equals(realOwner, possibleOwner)) {
-        throw new SecurityException(
-                String.format("Пользователь ID: %d пытался получить доступ к вещам пользователя ID: %d", possibleOwner, realOwner));
-    }
+        if (!Objects.equals(realOwner, possibleOwner)) {
+            throw new SecurityException(
+                    String.format("Пользователь ID: %d пытался получить доступ к вещам пользователя ID: %d", possibleOwner, realOwner));
+        }
     }
 
     @Transactional(readOnly = true)
@@ -298,9 +278,10 @@ public class ItemJPAService implements ItemService{
             return Collections.emptyList();
         }
 
-        return itemRepository.searchItems(normalizedText).stream()
-                .map(this::toSendDTO)
-                .toList();
+        List<Item> items = itemRepository.searchItems(normalizedText);
+        return items.stream()
+                .map(this::toSendDTO) // без дат и комментариев
+                .collect(Collectors.toList());
     }
 
     private String normalizeSearchText(String text) {

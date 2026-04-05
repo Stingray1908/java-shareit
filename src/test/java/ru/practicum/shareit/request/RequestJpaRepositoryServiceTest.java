@@ -3,17 +3,15 @@ package ru.practicum.shareit.request;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import ru.practicum.shareit.common.enums.RequestStatus;
 import ru.practicum.shareit.request.dto.ItemRequestReqDTO;
 import ru.practicum.shareit.request.dto.ItemRequestSendDTO;
 import ru.practicum.shareit.request.repository.RequestJpaRepository;
-import ru.practicum.shareit.request.service.RequestJpaService;
+import ru.practicum.shareit.request.service.RequestService;
 import ru.practicum.shareit.user.User;
-import ru.practicum.shareit.user.repository.UserJPARepository;
+import ru.practicum.shareit.user.repository.UserJpaRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,18 +21,18 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @SpringBootTest
-class   RequestJpaRepositoryServiceTest {
+@ActiveProfiles("test")
+class RequestJpaRepositoryServiceTest {
 
     @Autowired
     private RequestJpaRepository requestRepository;
 
     @Autowired
-    private UserJPARepository userJPARepository;
+    private UserJpaRepository userJPARepository;
 
     @Autowired
-    private RequestJpaService requestService;
+    private RequestService requestService;
 
     private Long requesterId;
     private static final String TEST_DESCRIPTION = "Test request description";

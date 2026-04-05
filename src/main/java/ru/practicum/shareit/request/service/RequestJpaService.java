@@ -5,22 +5,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.InternalException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
-import ru.practicum.shareit.booking.Booking;
-import ru.practicum.shareit.booking.dto.BookingSendDto;
 import ru.practicum.shareit.common.enums.RequestStatus;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.request.RequestMapper;
 import ru.practicum.shareit.request.dto.ItemRequestReqDTO;
 import ru.practicum.shareit.request.dto.ItemRequestSendDTO;
 import ru.practicum.shareit.request.repository.RequestJpaRepository;
-import ru.practicum.shareit.request.repository.RequestRepository;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserMapper;
-import ru.practicum.shareit.user.service.UserJPAService;
 import ru.practicum.shareit.user.service.UserService;
 
-import javax.sql.rowset.serial.SerialException;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -117,45 +111,40 @@ public class RequestJpaService implements RequestService {
     // написать тест
     @Override  // может удалить только создатель
     @Transactional
-    public void deleteById(Long requestId, Long requesterId) {
+    public void deleteById(Long requestId, Long requestorId) {
         ItemRequest existingRequest = findActiveRequestByIdOrThrowInternal(requestId);
-        validateRequestAccessOrThrow(existingRequest, requesterId);
+        validateRequestAccessOrThrow(existingRequest, requestorId);
 
         requestJpaRepo.deleteById(requestId);
     }
 
     @Transactional(readOnly = true)
     private User findUserOrThrow(Long userId) {
-        User user;
-        if ((user = userJPAService.getByIdOrThrowInternal(userId)) == null) {
-            throw new NoSuchElementException(
-                    String.format("При создании запроса пользователь с ID:%s не обнаружен", userId));
-        }
-        return user;
+        return userJPAService.getByIdOrThrowInternal(userId);
     }
 
     @Transactional(readOnly = true)
-    private void validateRequestAccessOrThrow(ItemRequest existingRequest, Long requestId) {
+    private void validateRequestAccessOrThrow(ItemRequest existingRequest, Long requestorId) {
         Long actualRequesterId = existingRequest.getRequester().getId();
 
-        if (!Objects.equals(actualRequesterId, requestId)) {
+        if (!Objects.equals(actualRequesterId, requestorId)) {
             String message = String.format(
                     ("Попытка несанкционированного доступа: пользователь ID=%d " +
                             "пытается изменить запрос, принадлежащий пользователю ID=%d"),
-                    requestId, actualRequesterId);
+                    requestorId, actualRequesterId);
             throw new SecurityException(message);
         }
     }
 
     @Transactional(readOnly = true)
-    private ItemRequestSendDTO toSendDto(ItemRequest request){
+    private ItemRequestSendDTO toSendDto(ItemRequest request) {
         ItemRequestSendDTO dto = requestMapper.toSendDto(request);
         dto.setRequester(userMapper.toSendDto(request.getRequester()));
         return dto;
     }
 
     @Transactional(readOnly = true)
-    private List<ItemRequestSendDTO> toListSendDto (Collection<ItemRequest> requests) {
+    private List<ItemRequestSendDTO> toListSendDto(Collection<ItemRequest> requests) {
         return requests.stream()
                 .map(this::toSendDto)
                 .toList();

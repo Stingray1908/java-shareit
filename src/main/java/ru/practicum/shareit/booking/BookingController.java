@@ -1,7 +1,9 @@
 package ru.practicum.shareit.booking;
 
 import jakarta.validation.constraints.Positive;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -14,15 +16,15 @@ import java.util.Collection;
 
 @Slf4j
 @Validated
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/bookings")
 public class BookingController {
 
-    private final BookingService service;
+    @Autowired
+    private final BookingService bookingService;
 
-    public BookingController(BookingService bookingService) {
-        this.service = bookingService;
-    }
+
 
     /**
      * Создаёт новое бронирование вещи.
@@ -37,7 +39,7 @@ public class BookingController {
             @RequestHeader(HttpHeader.X_SHARER_USER_ID) Long bookerId) {
         log.info("Получен запрос на создание бронирования для пользователя с ID: {}, данные бронирования: {}",
                 bookerId, bookingReqDto);
-        BookingSendDto result = service.create(bookingReqDto, bookerId);
+        BookingSendDto result = bookingService.create(bookingReqDto, bookerId);
         log.info("Бронирование успешно создано для пользователя с ID: {}, ID бронирования: {}",
                 bookerId, result.getId());
         return result;
@@ -61,7 +63,7 @@ public class BookingController {
         String action = approved ? "одобрение" : "отклонение";
         log.info("Получен запрос на {} бронирования с ID: {} от пользователя с ID: {}",
                 action, bookingId, userId);
-        BookingSendDto result = service.approveOrRejectBooking(bookingId, approved, userId);
+        BookingSendDto result = bookingService.approveOrRejectBooking(bookingId, approved, userId);
         log.info("Бронирование с ID: {} успешно {} для пользователя с ID: {}",
                 bookingId, action, userId);
         return result;
@@ -79,7 +81,7 @@ public class BookingController {
             @RequestHeader(HttpHeader.X_SHARER_USER_ID) Long userId) {
         log.info("Получен запрос на получение информации о бронировании с ID: {} для пользователя с ID: {}",
                 bookingId, userId);
-        BookingSendDto result = service.getByIdForBookerOrOwner(bookingId, userId);
+        BookingSendDto result = bookingService.getByIdForBookerOrOwner(bookingId, userId);
         log.info("Информация о бронировании с ID: {} успешно получена для пользователя с ID: {}",
                 bookingId, userId);
         return result;
@@ -98,7 +100,7 @@ public class BookingController {
             @RequestParam(defaultValue = "ALL") String state) {
         log.info("Получен запрос на получение бронирований для пользователя с ID: {}, состояние: {}",
                 userId, state);
-        Collection<BookingSendDto> result = service.getBookingsByState(userId, state);
+        Collection<BookingSendDto> result = bookingService.getBookingsByState(userId, state);
         log.info("Найдено {} бронирований для пользователя с ID: {}, состояние: {}",
                 result.size(), userId, state);
         return result;
@@ -116,7 +118,7 @@ public class BookingController {
             @RequestParam(defaultValue = "ALL") String state) {
         log.info("Получен запрос на получение бронирований вещей для владельца с ID: {}, состояние: {}",
                 ownerId, state);
-        Collection<BookingSendDto> result = service.getBookingsByOwnerState(ownerId, state);
+        Collection<BookingSendDto> result = bookingService.getBookingsByOwnerState(ownerId, state);
         log.info("Найдено {} бронирований вещей для владельца с ID: {}, состояние: {}",
                 result.size(), ownerId, state);
         return result;

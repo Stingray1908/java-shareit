@@ -6,14 +6,12 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.validation.annotation.Validated;
 import ru.practicum.shareit.common.groups.OnCreate;
 import ru.practicum.shareit.common.groups.OnUpdate;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Validated
 public class UserReqDTO {
     @NotNull(groups = OnCreate.class, message = "Имя при создании не может быть null")
     @NotBlank(groups = OnCreate.class, message = "Имя при создании не может быть пусто")

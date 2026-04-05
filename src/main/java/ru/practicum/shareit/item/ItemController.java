@@ -2,7 +2,7 @@ package ru.practicum.shareit.item;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
-import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,12 +41,13 @@ import java.util.List;
  */
 @Slf4j
 @Validated
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/items")
 public class ItemController {
 
     @Autowired
-    private ItemService itemService;
+    private final ItemService itemService;
 
     /**
      * Создаёт новую вещь в системе.

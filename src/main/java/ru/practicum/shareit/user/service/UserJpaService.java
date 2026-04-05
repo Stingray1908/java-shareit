@@ -8,75 +8,62 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.dto.UserReqDTO;
 import ru.practicum.shareit.user.dto.UserSendDTO;
-import ru.practicum.shareit.user.repository.UserJPARepository;
+import ru.practicum.shareit.user.repository.UserJpaRepository;
 
 import java.util.Collection;
 import java.util.NoSuchElementException;
 
 @RequiredArgsConstructor
 @Service
-public class UserJPAService implements UserService {
+public class UserJpaService implements UserService {
 
-    private final UserJPARepository jpaRepository;
+    private final UserJpaRepository jpaRepository;
     private final UserMapper mapper;
 
     @Transactional
     @Override
     public UserSendDTO create(UserReqDTO reqDTO) {
         User user = mapper.toEntity(reqDTO);
-
         isNotEmailExistOrThrow(user.getEmail());
-
         return mapper.toSendDto(jpaRepository.save(user));
     }
 
     @Transactional
     @Override
     public UserSendDTO update(Long id, UserReqDTO reqDTO) {
-        User patchingUser = mapper.toEntity(reqDTO);
-        patchingUser.setId(id);
-
-        String name = patchingUser.getName();
-        String email = patchingUser.getEmail();
-
-        if (name == null && email == null)
-            throw new IllegalArgumentException("Не заданы имя и email для обновления пользователя");
-
         User existingUser = getByIdOrThrowInternal(id);
-
-        if (name != null) {
-            existingUser.setName(name);
-        }
-
-        if (email != null) {
-            isNotEmailExistOrThrow(email);
-            existingUser.setEmail(email);
-        }
-
+        updateUserFields(existingUser, reqDTO);
         return mapper.toSendDto(jpaRepository.save(existingUser));
+    }
+
+    private void updateUserFields(User existingUser, UserReqDTO reqDTO) {
+        String newName = reqDTO.getName();
+        String newEmail = reqDTO.getEmail();
+
+        if (newName == null && newEmail == null) {
+            throw new IllegalArgumentException("Не заданы имя и email для обновления пользователя");
+        }
+
+        if (newName != null) {
+            existingUser.setName(newName);
+        }
+
+        if (newEmail != null) {
+            isNotEmailExistOrThrow(newEmail);
+            existingUser.setEmail(newEmail);
+        }
     }
 
     @Transactional(readOnly = true)
     @Override
     public UserSendDTO getById(Long id) {
-        return mapper.toSendDto(
-                getByIdOrThrowInternal(id)
-        );
+        return mapper.toSendDto(getByIdOrThrowInternal(id));
     }
 
     @Transactional(readOnly = true)
     public User getByIdOrThrowInternal(Long id) {
-        System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         return jpaRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Пользователь с id: " + id + " не существует"));
-    }
-
-    @Transactional(readOnly = true)
-    public UserSendDTO getUserWithItems(Long id) {
-        User user = jpaRepository.findUserWithItems(id)
-                .orElseThrow(() -> new NoSuchElementException("Пользователь с id: " + id + " не существует"));
-
-        return mapper.toSendDto(user);
     }
 
     @Transactional(readOnly = true)
