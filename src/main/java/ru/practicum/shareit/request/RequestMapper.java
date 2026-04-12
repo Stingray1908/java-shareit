@@ -18,9 +18,9 @@ public class RequestMapper implements GenericMapper<ItemRequest, ItemRequestReqD
         ItemRequestSendDTO dto = new ItemRequestSendDTO();
         dto.setId(entity.getId());
         dto.setDescription(entity.getDescription());
-        dto.setRequestor(entity.getRequestor());
         dto.setCreated(entity.getCreated());
         dto.setStatus(entity.getStatus());
+        // Реквестера добовлять отдельно
         return dto;
     }
 

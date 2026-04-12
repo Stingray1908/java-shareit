@@ -1,6 +1,8 @@
 package ru.practicum.shareit.item.service;
 
 import ru.practicum.shareit.item.Item;
+import ru.practicum.shareit.item.comment.dto.CommentReqDto;
+import ru.practicum.shareit.item.comment.dto.CommentSendDto;
 import ru.practicum.shareit.item.dto.ItemReqDTO;
 import ru.practicum.shareit.item.dto.ItemSendDTO;
 
@@ -23,6 +25,8 @@ public interface ItemService {
      * @throws IllegalArgumentException если описание превышает допустимую длину (100 символов)
      */
     ItemSendDTO create(Long ownerId, ItemReqDTO itemReqDTO);
+
+    CommentSendDto addComment(Long userId, Long itemId, CommentReqDto dto);
 
     /**
      * Обновляет данные существующей вещи.
@@ -54,7 +58,7 @@ public interface ItemService {
      * @return сущность вещи
      * @throws NoSuchElementException если вещь с указанным ID не найдена
      */
-    Item getByIdInternal(Long id);
+    Item getByIdOrThrowInternal(Long id);
 
     /**
      * Возвращает список DTO вещей, принадлежащих указанному пользователю.
@@ -74,17 +78,17 @@ public interface ItemService {
      * @throws NoSuchElementException если запрос с указанным ID не найден
      * @throws SecurityException      если пользователь не является владельцем запроса
      */
-    Collection<ItemSendDTO> getItemsByRequestOwnerAndRequestIds(Long requestId, Long requestOwnerId);
+    Collection<ItemSendDTO> findItemsByRequestIdForRequester(Long requestId, Long requestOwnerId);
 
     /**
      * Удаляет вещь из системы, если она принадлежит указанному пользователю.
      *
-     * @param userId идентификатор пользователя — владельца вещи
-     * @param itemId идентификатор вещи для удаления
+     * @param ownerId идентификатор пользователя — владельца вещи
+     * @param itemId  идентификатор вещи для удаления
      * @throws NoSuchElementException если пользователь или вещь не найдены
      * @throws SecurityException      если указанный пользователь не является владельцем вещи
      */
-    void deleteByItemAndOwnerIds(long userId, long itemId);
+    void deleteByIdForOwner(long ownerId, long itemId);
 
     /**
      * Осуществляет поиск доступных вещей по подстроке в названии или описании (без учёта регистра).

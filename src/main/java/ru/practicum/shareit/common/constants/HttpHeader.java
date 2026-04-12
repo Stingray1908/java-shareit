@@ -16,7 +16,6 @@ public class HttpHeader {
     /**
      * Заголовок для передачи общего ID пользователя в запросах.
      * Используется в {@link ru.practicum.shareit.booking.BookingController} и
-     * {@link ru.practicum.shareit.comment.CommentController}.
      */
     public static final String X_USER_ID = "X-User-Id";
 

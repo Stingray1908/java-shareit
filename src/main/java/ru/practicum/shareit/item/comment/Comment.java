@@ -1,11 +1,9 @@
-package ru.practicum.shareit.booking;
+package ru.practicum.shareit.item.comment;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.common.enums.BookingStatus;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.user.User;
 
@@ -14,10 +12,9 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(exclude = {"start", "end", "status"})
 @Entity
-@Table(name = "bookings")
-public class Booking {
+@Table(name = "comments")
+public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -30,14 +27,12 @@ public class Booking {
     @JoinColumn(name = "item_id", nullable = false)
     private Item item;
 
-    @Column(nullable = false)
-    private LocalDateTime start;
+    @Column(name = "text", columnDefinition = "TEXT", nullable = false)
+    private String text;
 
-    @Column(name = "\"end\"", nullable = false)
-    private LocalDateTime end;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private BookingStatus status;
-
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 }

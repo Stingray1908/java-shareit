@@ -1,6 +1,7 @@
-package ru.practicum.shareit.comment.repository;
+package ru.practicum.shareit.item.comment.repository;
 
-import ru.practicum.shareit.comment.Comment;
+
+import ru.practicum.shareit.item.comment.Comment;
 
 import java.util.List;
 import java.util.Optional;
@@ -50,4 +51,6 @@ public interface CommentRepository {
      * @return true, если такой комментарий уже существует; false — в противном случае
      */
     boolean existsByBookerAndItem(Long bookerId, Long itemId);
+
+    void deleteAll();
 }

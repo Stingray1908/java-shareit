@@ -17,12 +17,12 @@ import java.util.NoSuchElementException;
 @ControllerAdvice
 public class ExceptionController {
 
-    @ExceptionHandler(NoSuchElementException.class)
+    @ExceptionHandler({NoSuchElementException.class})
     public ResponseEntity<Object> handleNoSuchElementException(Exception ex) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("message", ex.getMessage());
         body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("status", HttpStatus.NOT_FOUND.value());
         body.put("path", ex.getCause());
 
         log.warn(ex.getMessage());

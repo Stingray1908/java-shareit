@@ -38,4 +38,5 @@ public class UserMapper implements GenericMapper<User, UserReqDTO, UserSendDTO> 
                 dto.getEmail()
         );
     }
+
 }

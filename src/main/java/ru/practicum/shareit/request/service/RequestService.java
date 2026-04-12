@@ -15,7 +15,7 @@ public interface RequestService {
     /**
      * Создаёт новый запрос на получение предмета от пользователя.
      *
-     * @param requestDto DTO с данными для создания запроса
+     * @param requestDto  DTO с данными для создания запроса
      * @param requestorId идентификатор пользователя, создающего запрос
      * @return DTO с данными созданного запроса
      * @throws NoSuchElementException если пользователь с указанным ID не найден
@@ -25,14 +25,14 @@ public interface RequestService {
     /**
      * Обновляет статус существующего запроса.
      *
-     * @param requestDto DTO с новыми данными статуса запроса
-     * @param requestId идентификатор запроса, который нужно обновить
+     * @param requestDto  DTO с новыми данными статуса запроса
+     * @param requestId   идентификатор запроса, который нужно обновить
      * @param requestorId идентификатор пользователя — инициатора запроса
      * @return DTO с данными обновлённого запроса
      * @throws IllegalArgumentException если:
      *                                  - новый статус недопустим (PENDING или RESPONDED);
      *                                  - текущий статус запроса не позволяет его изменить (CANCELLED или COMPLETED)
-     * @throws NoSuchElementException если запрос с указанным ID не найден
+     * @throws NoSuchElementException   если запрос с указанным ID не найден
      */
     ItemRequestSendDTO patchStatus(ItemRequestReqDTO requestDto, Long requestId, Long requestorId);
 
@@ -45,20 +45,13 @@ public interface RequestService {
     ItemRequest patchStatusInternal(ItemRequest request);
 
     /**
-     * Возвращает список всех запросов в системе.
-     *
-     * @return список DTO со всеми запросами
-     */
-    List<ItemRequestSendDTO> getAllRequests();
-
-    /**
      * Получает сущность запроса по его идентификатору для внутреннего использования.
      *
      * @param requestId идентификатор запроса
      * @return сущность запроса
      * @throws NoSuchElementException если запрос с указанным ID не найден
      */
-    ItemRequest getByIdForInternal(Long requestId);
+    ItemRequest findActiveRequestByIdOrThrowInternal(Long requestId);
 
     /**
      * Получает DTO запроса по его идентификатору для внешнего использования (клиента).
@@ -67,7 +60,7 @@ public interface RequestService {
      * @return DTO с данными запроса
      * @throws NoSuchElementException если запрос с указанным ID не найден
      */
-    ItemRequestSendDTO getByIdExternal(Long requestId);
+    ItemRequestSendDTO getById(Long requestId);
 
     /**
      * Возвращает список запросов, созданных указанным пользователем.
@@ -81,10 +74,12 @@ public interface RequestService {
     /**
      * Удаляет запрос по его идентификатору.
      *
-     * @param requestId идентификатор запроса, который нужно удалить
-     * @param requestorId идентификатор пользователя — владельца запроса
+     * @param requestId   идентификатор запроса, который нужно удалить
+     * @param requesterId идентификатор пользователя — владельца запроса
      * @throws IllegalArgumentException если запрос не принадлежит указанному пользователю
-     * @throws NoSuchElementException если запрос с указанным ID не найден
+     * @throws NoSuchElementException   если запрос с указанным ID не найден
      */
-    void delete(Long requestId, Long requestorId);
+    void deleteById(Long requestId, Long requesterId);
+
+    ItemRequest findRequestByIdOrThrowInternal(Long id);
 }

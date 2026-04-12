@@ -2,12 +2,15 @@ package ru.practicum.shareit.item;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.common.constants.HttpHeader;
+import ru.practicum.shareit.item.comment.dto.CommentReqDto;
+import ru.practicum.shareit.item.comment.dto.CommentSendDto;
 import ru.practicum.shareit.item.dto.ItemReqDTO;
 import ru.practicum.shareit.item.dto.ItemSendDTO;
 import ru.practicum.shareit.item.service.ItemService;
@@ -38,12 +41,13 @@ import java.util.List;
  */
 @Slf4j
 @Validated
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/items")
 public class ItemController {
 
     @Autowired
-    private ItemService itemService;
+    private final ItemService itemService;
 
     /**
      * Создаёт новую вещь в системе.
@@ -66,6 +70,21 @@ public class ItemController {
         log.info("Получён запрос на добавление вещи. Владелец: {}, данные вещи: {}", ownerId, itemReqDTO);
         ItemSendDTO result = itemService.create(ownerId, itemReqDTO);
         log.info("Выполнен запрос на добавление вещи. Ответ клиенту: {}", result);
+        return result;
+    }
+
+    @PostMapping("/{itemId}/comment")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CommentSendDto addComment(
+            @Positive(message = "ID вещи должен быть положительным числом")
+            @PathVariable Long itemId,
+            @RequestBody CommentReqDto dto,
+            @Positive(message = "ID пользователя должен быть положительным числом")
+            @RequestHeader(HttpHeader.X_SHARER_USER_ID) Long userId) {
+        log.info("Получён запрос на добавление комментария к вещи ID: {} от пользователя ID: {}", itemId, userId);
+        log.info(String.valueOf(dto));
+        CommentSendDto result = itemService.addComment(userId, itemId, dto);
+        log.info("Выполнен запрос на добавление комментария. Ответ клиенту: {}", result);
         return result;
     }
 
@@ -133,7 +152,7 @@ public class ItemController {
                                                        @Positive(message = "ID пользователя должен быть положительным числом")
                                                        @RequestHeader(HttpHeader.X_SHARER_USER_ID) long ownerId) {
         log.info("Получён запрос на получение вещей по запросу ID: {}, составителя ID: {}", id, ownerId);
-        Collection<ItemSendDTO> items = itemService.getItemsByRequestOwnerAndRequestIds(id, ownerId);
+        Collection<ItemSendDTO> items = itemService.findItemsByRequestIdForRequester(id, ownerId);
         log.info("Вещи по запросу ID: {} успешно получены. Количество вещей: {}", id, items.size());
         return items;
     }
@@ -152,7 +171,7 @@ public class ItemController {
                                         @Positive(message = "ID вещи должен быть положительным числом")
                                         @PathVariable(name = "itemId") long itemId) {
         log.info("Получён запрос на удаление вещи ID: {} пользователя ID: {}", itemId, userId);
-        itemService.deleteByItemAndOwnerIds(userId, itemId);
+        itemService.deleteByIdForOwner(userId, itemId);
         log.info("Вещь ID: {} пользователя ID: {} успешно удалена", itemId, userId);
     }
 
