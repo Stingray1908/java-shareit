@@ -20,6 +20,7 @@ public class ExceptionController {
     @ExceptionHandler({NoSuchElementException.class})
     public ResponseEntity<Object> handleNoSuchElementException(Exception ex) {
         Map<String, Object> body = new LinkedHashMap<>();
+        body.put("error", "NoSuchElementException");
         body.put("message", ex.getMessage());
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.NOT_FOUND.value());
@@ -36,6 +37,7 @@ public class ExceptionController {
 
     public ResponseEntity<Object> handleMethodArgumentTypeMismatch(Exception ex) {
         Map<String, Object> body = new LinkedHashMap<>();
+        body.put("error", "MethodArgumentNotValidException");
         body.put("message", ex.getMessage());
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
@@ -47,6 +49,7 @@ public class ExceptionController {
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<Object> handleConflictException(Exception ex) {
         Map<String, Object> body = new LinkedHashMap<>();
+        body.put("error", "ConflictException");
         body.put("message", ex.getMessage());
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.CONFLICT.value());
@@ -59,6 +62,7 @@ public class ExceptionController {
     @ExceptionHandler(SecurityException.class)
     public ResponseEntity<Object> handleSecurityException(SecurityException ex) {
         Map<String, Object> body = new LinkedHashMap<>();
+        body.put("error", "SecurityException");
         body.put("message", ex.getMessage());
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.FORBIDDEN.value());
