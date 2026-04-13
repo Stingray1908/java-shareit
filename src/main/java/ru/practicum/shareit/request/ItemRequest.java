@@ -3,9 +3,12 @@ package ru.practicum.shareit.request;
 import jakarta.persistence.*;
 import lombok.Data;
 import ru.practicum.shareit.common.enums.RequestStatus;
+import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.user.User;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Entity
@@ -29,4 +32,7 @@ public class ItemRequest {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private RequestStatus status;
+
+    @OneToMany(mappedBy = "request", fetch = FetchType.LAZY)
+    private List<Item> items = new ArrayList<>();
 }

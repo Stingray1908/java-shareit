@@ -3,6 +3,7 @@ package ru.practicum.shareit.request.service;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.request.dto.ItemRequestReqDTO;
 import ru.practicum.shareit.request.dto.ItemRequestSendDTO;
+import ru.practicum.shareit.request.dto.ItemRequestWithItemsDto;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -82,4 +83,9 @@ public interface RequestService {
     void deleteById(Long requestId, Long requesterId);
 
     ItemRequest findRequestByIdOrThrowInternal(Long id);
+
+    List<ItemRequestWithItemsDto> getAllByRequestorIdWithItems(Long requestorId);
+    List<ItemRequestWithItemsDto> getAllWithItems();
+    ItemRequestWithItemsDto getByIdWithItems(Long id);
+
 }

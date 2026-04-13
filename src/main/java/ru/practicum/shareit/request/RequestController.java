@@ -11,6 +11,7 @@ import ru.practicum.shareit.common.constants.HttpHeader;
 import ru.practicum.shareit.common.groups.OnUpdate;
 import ru.practicum.shareit.request.dto.ItemRequestReqDTO;
 import ru.practicum.shareit.request.dto.ItemRequestSendDTO;
+import ru.practicum.shareit.request.dto.ItemRequestWithItemsDto;
 import ru.practicum.shareit.request.service.RequestService;
 
 import java.util.List;
@@ -50,7 +51,7 @@ public class RequestController {
             @Valid
             @RequestBody ItemRequestReqDTO requestDto,
             @Positive(message = "ID пользователя должен быть положительным числом")
-            @RequestHeader(HttpHeader.X_REQUESTOR_USER_ID) Long requestorId) {
+            @RequestHeader(HttpHeader.X_SHARER_USER_ID) Long requestorId) {
 
         log.info("Получён запрос на создание запроса от пользователя ID: {}, данные: {}",
                 requestorId, requestDto);
@@ -85,34 +86,43 @@ public class RequestController {
      */
     @GetMapping("/{requestId}")
     @ResponseStatus(HttpStatus.OK)
-    public ItemRequestSendDTO getById(
+    public ItemRequestWithItemsDto getRequestWithItems(
             @Positive(message = "ID запроса должен быть положительным числом")
             @PathVariable Long requestId) {
-
         log.info("Получён запрос на получение запроса по ID: {}", requestId);
-        ItemRequestSendDTO request = requestService.getById(requestId);
+        ItemRequestWithItemsDto request = requestService.getByIdWithItems(requestId);
         log.info("Запрос по ID: {} успешно получен. Ответ клиенту: {}",
                 requestId, request);
         return request;
     }
 
+
     /**
      * Возвращает все запросы текущего пользователя.
-     * ID пользователя передаётся в заголовке X-Requestor-User-Id.
+     * ID пользователя передаётся в заголовке X_SHARER_USER_ID.
      * Если пользователь не найден, выбрасывает NoSuchElementException.
      * При отсутствии запросов возвращает пустой список.
      */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    List<ItemRequestSendDTO> getAllByCurrentUser(
+    List<ItemRequestWithItemsDto> getMyRequestsWithItems(
             @Positive(message = "ID пользователя должен быть положительным числом")
-            @RequestHeader(HttpHeader.X_REQUESTOR_USER_ID) Long requestorId) {
-
+            @RequestHeader(HttpHeader.X_SHARER_USER_ID) Long requestorId) {
         log.info("Получён запрос на получение всех запросов пользователя ID: {}", requestorId);
-        List<ItemRequestSendDTO> requests = requestService.getAllByRequestorId(requestorId);
+        List<ItemRequestWithItemsDto> requests = requestService.getAllByRequestorIdWithItems(requestorId);
         log.info("Получено {} запросов для пользователя ID: {}", requests.size(), requestorId);
         return requests;
     }
+
+    @GetMapping("/all")
+    @ResponseStatus(HttpStatus.OK)
+    public List<ItemRequestWithItemsDto> getAllRequestsWithItems() {
+        log.info("Получён запрос на получение всех публичных запросов");
+        List<ItemRequestWithItemsDto> requests = requestService.getAllWithItems();
+        log.info("Получено {} публичных запросов", requests.size());
+        return requests;
+    }
+
 
     /**
      * Удаляет запрос по ID.

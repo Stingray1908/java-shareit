@@ -10,6 +10,7 @@ import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.request.RequestMapper;
 import ru.practicum.shareit.request.dto.ItemRequestReqDTO;
 import ru.practicum.shareit.request.dto.ItemRequestSendDTO;
+import ru.practicum.shareit.request.dto.ItemRequestWithItemsDto;
 import ru.practicum.shareit.request.repository.RequestJpaRepository;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserMapper;
@@ -149,4 +150,31 @@ public class RequestJpaService implements RequestService {
                 .map(this::toSendDto)
                 .toList();
     }
+    @Override
+    @Transactional(readOnly = true)
+    public List<ItemRequestWithItemsDto> getAllByRequestorIdWithItems(Long requestorId) {
+        List<ItemRequest> requests = requestJpaRepo.findAllByRequesterIdWithItems(requestorId);
+        return requests.stream()
+                .map(requestMapper::toWithItemsDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ItemRequestWithItemsDto> getAllWithItems() {
+        List<ItemRequest> requests = requestJpaRepo.findAllWithItems();
+        return requests.stream()
+                .map(requestMapper::toWithItemsDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ItemRequestWithItemsDto getByIdWithItems(Long id) {
+        ItemRequest request = requestJpaRepo.findByIdWithItems(id)
+                .orElseThrow(() -> new NoSuchElementException("Запрос с id: " + id + " не существует"));
+        return requestMapper.toWithItemsDto(request);
+    }
+
+
 }

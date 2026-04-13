@@ -88,4 +88,26 @@ public interface RequestJpaRepository extends JpaRepository<ItemRequest, Long> {
      * @param id ID запроса на аренду для удаления
      */
     void deleteById(Long id);
+
+    @Query("SELECT r FROM ItemRequest r " +
+            "JOIN FETCH r.requester " +
+            "LEFT JOIN FETCH r.items i " +
+            "WHERE r.requester.id = :requesterId " +
+            "ORDER BY r.created DESC")
+    List<ItemRequest> findAllByRequesterIdWithItems(@Param("requesterId") Long requesterId);
+
+
+    @Query("SELECT r FROM ItemRequest r " +
+            "JOIN FETCH r.requester " +
+            "LEFT JOIN FETCH r.items i " +
+            "ORDER BY r.created DESC")
+    List<ItemRequest> findAllWithItems();
+
+
+    @Query("SELECT r FROM ItemRequest r " +
+            "JOIN FETCH r.requester " +
+            "LEFT JOIN FETCH r.items i " +
+            "WHERE r.id = :id")
+    Optional<ItemRequest> findByIdWithItems(@Param("id") Long id);
+
 }
